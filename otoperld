@@ -1,0 +1,31 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use OtoPerl::Server;
+
+my $param = read_options({
+	-port => '14609'
+}, \@ARGV);
+
+my $server = OtoPerl::Server->new($param);
+
+$server->start();
+
+
+
+sub read_options {
+	my $defaults = shift;
+	my $arglist = shift;
+	while ( shift @$arglist ) {
+		if ($_ =~ /^\-\w+$/) {
+			exists $defaults->{$_} or die "unknown option '$_'.";
+			@$arglist or die "no value for option '$_'.";
+			$defaults->{$_} = shift @$arglist;
+		}else{
+			unshift @$arglist, $_;
+		}
+	}
+	return $defaults;
+}

@@ -1,0 +1,211 @@
+
+#逆にCにPerlを埋め込む
+	perlembed
+	http://perldoc.jp/docs/perl/5.10.0/perlembed.pod
+
+	サーバ
+		HTTPメソッド POST (このperlコードを実行せよ)
+		→返り値 はい
+		Audio Unitコールバック
+		→Perlコードを実行
+		→戻り値をコールバックの結果に
+	c-otoperld
+
+	メリット:
+		全体をネイティブなバイナリにできる。
+		Audio Unit としてビルドも可能→他のソフトにプラグイン！
+		コールバックの度に通信する事がないため、オーバーヘッドが小さい
+
+#Audio UnitとperlでUDP通信する OSC の場合
+	OSC
+	http://opensoundcontrol.org/spec-1_0
+	http://veritas-vos-liberabit.com/trans/OSC/OSC-spec-1_0.html
+	Net::LibLO
+	http://search.cpan.org/~njh/Net-LibLO-0.06/lib/Net/LibLO.pm
+
+	レスポンスが無いので多少面倒だが、TCPでやるよりマシかな？
+	サーバ
+		Audio Unit (C)
+			Audio Unitコールバック
+			→OSCリクエスト pullwave (時刻A-B の波形を下さい)
+			→OSCメソッド wave(time a, binary wave)
+			→貰った値をコールバックの結果に
+		Perl
+			OSCメソッド pullwave(time a, time b)
+			→OSCリクエスト wave (これ波形です)
+			HTTPメソッド POST (このperlコードを実行せよ)
+			→返り値 はい
+	osc-otoperld
+
+	メリット:
+		Perl以外の言語でもOSCを喋ればotoXXXできる
+		HTTP/TCPよりはオーバーヘッドが小さいかも
+	デメリット:
+		OSC/UDPのオーバーヘッドは？
+		HTTPよりコードが複雑でブロッキングする箇所もある
+
+	TCP over HTTP でやる場合 レスポンスがあるので楽
+	サーバ
+		Audio Unit (C)
+			Audio Unitコールバック
+			→HTTPリクエスト GET (時刻A-B の波形を下さい)
+			→レスポンスをコールバックの結果に
+		Perl
+			HTTPメソッド GET (time a, time b)
+			→返り値 wave 波形です
+			HTTPメソッド POST (このperlコードを実行せよ)
+			→返り値 はい
+	http-otoperld
+
+	メリット:
+		Perl以外の言語でもHTTPを喋ればotoXXXできる
+		OSCよりコードがシンプルでブロッキングの必要がない
+	デメリット:
+		HTTP/TCPのオーバーヘッドは？
+		OSC/UDPよりオーバーヘッドが大きいかも
+
+#CにPerlを埋め込む？（まだ試してない）
+
+CのAUサンプルに、Perlのインタプリタを定義してサブルーチンを呼ぶコード実装
+Cにサーバ機能を実装
+
+最終的にAudio UnitとしてHostできる用にしては？
+
+#Segmentation Fault について
+Segmentation Fault が起きるのは
+・どこで起きるのかは一定しない
+・AudioUnit のコールバックC関数からperlのコールをする場合のみ起きる
+perlの処理(特に関数呼び出し処理)がスレッドセーフではないのが原因？
+(AudioUnitのコールバックにより、マルチスレッド化している)
+
+戦略1
+	最初にスレッドを2つに分けて
+	スレッド1
+		(このスレッドでコールバックが実行される)
+		C関数 AudioUnit Start
+		SIGINT を待つ
+		C関数 AudioUnit Stop
+	スレッド2
+		HTTPサーバ動作を行う
+
+	Macports で (i)threads有効なperl perl5 +threads をインストール
+	→このバージョンのPerlでは、Inline C で dSP すると必ずsegfault
+	（thread使ってなくても！）
+	p5-inline を再インストールしたり、 cpan から Inline 入れても同様
+
+	マクロ dSP 内部で PL_stack_sp が触られた時にsegfault
+		http://pub.ne.jp/wakapon/?entry_id=1061914
+
+	おそらく…
+	ithreads無効なperl
+		→thread間でStack共有
+		→Audio CallbackとHTTPで関数呼出時のスタックが競合してエラー
+	ithreads有効なperl
+		→thread間でStack分離
+		→Audio Callbackされたスレッド(呼び出されたCで分離したスレッド)
+			にStackが存在せずdSPのエラー
+
+	void *perl_context;
+	perl_context = PERL_GET_CONTEXT;
+	PERL_SET_CONTEXT(perl_context);
+		でいけた！スレッド間でPerlのコンテクストを共有！
+
+	→だが、スレッド間でコードの変更を共有できない問題
+	↓
+	共有変数に スレッドID(threads->newの返り値) や 
+	サブルーチンへのリファレンスを代入しようとしたら…
+	Invalid value for shared scalar
+
+戦略2
+	マルチスレッドサーバのライブラリを使用する
+	POE::Component::Server::TCP とか。
+		戦略1 がダメだった理由と同じ理由でダメそう。
+
+
+では、これらの戦略は…？
+	逆にCにPerlを埋め込む
+	http://perldoc.jp/docs/perl/5.10.0/perlembed.pod
+
+	Audio UnitサーバとperlクライアントでUDP通信する
+
+#otoperld options
+-port 14609
+
+#otoperl options
+-host localhost
+-port 14609
+
+#Serverでの発音開始と設定のタイミング
+otoperld起動時: otoperld -rate 96000..
+otoperlc に渡すファイル内: $OP->run(-rate 96000);
+
+#modules
+Inline
+
+port installed | grep perl
+
+sudo port upgrade perl5 +threads
+sudo port upgrade --enforce-variants perl5 +threads
+
+port install p5-inline
+
+#Inline::C
+
+http://perldoc.jp/docs/modules/Inline-0.43/Inline.pod
+http://perldoc.jp/docs/modules/Inline-0.43/C/C.pod
+http://perldoc.jp/docs/modules/Inline-0.43/C/C-Cookbook.pod
+
+Inline::C の解説にある、CからのPerlコールが失敗する
+	(memory wrap.. というエラーや、 segmentation fault がくる)
+	どうやら Inline_Stack_Vars perl_call_pv 等のマクロのデキが
+	悪いらしい。
+
+http://perldoc.jp/docs/perl/5.10.0/perlcall.pod
+	に記載されている、より低レベルなコールを使用する事で
+	回避できた。
+
+
+#frameworks を Inline::C のobjにリンクさせる
+C Config の
+LDDLFLAGS に
+-framework CoreServices -framework CoreAudio -framework AudioUnit
+を指定する
+
+http://www.nntp.perl.org/group/perl.inline/2001/11/msg875.html
+	Re: Linking to frameworks on MacOSX
+	by Brian Ingerson at perl.inline
+	によると
+	LDDLFLAGS => '-bundle -undefined suppress -framework CoreServices',
+	INC => '-I/Developer/Headers/FlatCarbon';
+	を指定しろとの事。
+
+但し、初期状態の
+-L/opt/local/lib -arch x86_64 -bundle -undefined dynamic_lookup -fstack-protector
+も併記する必要あり。
+この設定はperlのコンパイルオプションであり（多分）
+use Config; して $Config{lddlflags} で取得できる。
+
+
+#perlからCコールする
+
+XS
+SWIG
+Inline::C	一番簡単そう
+
+
+#CoreAudio: Audio Unit vs HAL
+the Component Manager
+	the default output unit [これが使えそう]
+		サンプル: SimpleSDK/DefaultOutputUnit
+	the system output unit
+	the AUHAL
+		SimplePlayThru | CAPlayThrough
+
+
+#perl and eval
+実行中に eval で関数を上書きできる
+
+no warnings 'redefine'; で関数再定義時のエラーを消せる
+
+eval は同じプロセス内にしか影響を与えない
+

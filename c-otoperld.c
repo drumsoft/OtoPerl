@@ -1,12 +1,8 @@
-#include <CoreServices/CoreServices.h>
-#include <stdio.h>
-#include <unistd.h>
+// c-otoperld
 
-#include <AudioUnit/AudioUnit.h>
-#include <CoreAudio/CoreAudio.h>
+#include "c-otoperld.h"
 
-#include <EXTERN.h>
-#include <perl.h>
+pthread_mutex_t mutex_for_perl = PTHREAD_MUTEX_INITIALIZER;
 
 // THESE values can be read from your data source
 // they're used to tell the DefaultOutputUnit what you're giving it
@@ -44,6 +40,8 @@ OSStatus	MyRenderer_Perl(void 				*inRefCon,
 	UInt32 inChannel = ioData->mNumberBuffers;
 	int count;
 	
+	pthread_mutex_lock( &mutex_for_perl );
+	
 	dSP;
 	ENTER;
 	SAVETMPS;
@@ -65,50 +63,7 @@ OSStatus	MyRenderer_Perl(void 				*inRefCon,
 	FREETMPS;
 	LEAVE;
 
-	return noErr;
-}
-
-
-UInt32			MyRenderer_C_Count = 0;
-OSStatus	MyRenderer_P0(void 				*inRefCon, 
-				AudioUnitRenderActionFlags 	*ioActionFlags, 
-				const AudioTimeStamp 		*inTimeStamp, 
-				UInt32 						inBusNumber, 
-				UInt32 						inNumberFrames, 
-				AudioBufferList 			*ioData) {
-	UInt32 frame;
-	UInt32 channel;
-	UInt32 inChannel = ioData->mNumberBuffers;
-
-	for (channel = 0; channel < inChannel; channel++)
-		for (frame = 0; frame < inNumberFrames; frame++)
-			((Float32 *)( ioData->mBuffers[channel].mData ))[frame] = 
-				0.8 * sin( 3.1415 * 2 * (MyRenderer_C_Count+frame) * 440 / 48000 );
-
-	char *args[] = { NULL };
-	call_argv("perl_render", G_DISCARD | G_NOARGS, args);
-
-	MyRenderer_C_Count += inNumberFrames;
-
-	return noErr;
-}
-
-OSStatus	MyRenderer_C(void 				*inRefCon, 
-				AudioUnitRenderActionFlags 	*ioActionFlags, 
-				const AudioTimeStamp 		*inTimeStamp, 
-				UInt32 						inBusNumber, 
-				UInt32 						inNumberFrames, 
-				AudioBufferList 			*ioData) {
-	UInt32 frame;
-	UInt32 channel;
-	UInt32 inChannel = ioData->mNumberBuffers;
-
-	for (channel = 0; channel < inChannel; channel++)
-		for (frame = 0; frame < inNumberFrames; frame++)
-			((Float32 *)( ioData->mBuffers[channel].mData ))[frame] = 
-				0.8 * sin( 3.1415 * 2 * (MyRenderer_C_Count+frame) * 440 / 48000 );
-
-	MyRenderer_C_Count += inNumberFrames;
+	pthread_mutex_unlock( &mutex_for_perl );
 
 	return noErr;
 }
@@ -211,6 +166,7 @@ void sound_stop() {
 // ---------------------------
 int main(int argc, char **argv, char **env) {
 
+	pthread_mutex_init( &mutex_for_perl , NULL );
 
 	PERL_SYS_INIT3(&argc,&argv,&env);
 	my_perl = perl_alloc();
@@ -226,16 +182,34 @@ int main(int argc, char **argv, char **env) {
 	call_pv("perl_render_init", G_DISCARD|G_NOARGS);
 
 	sound_start();
-	CFRunLoopRunInMode(kCFRunLoopDefaultMode
-		, argc >= 2 ? atoi(argv[1]) : 5
-		, false);
+
+	if (SIG_ERR == signal(SIGINT, terminate)) {
+		printf("failed to set signal handler.n");
+		terminate(0);
+	}
+
+	//             0123456789A
+	char code[] = "sub pan{0.5}";
+	srand((unsigned) time(NULL));
+	while(1){
+		CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, false);
+		code[10] = '0' + ( rand()%9 + 1 );
+		pthread_mutex_lock( &mutex_for_perl );
+		eval_pv(code, TRUE);
+		pthread_mutex_unlock( &mutex_for_perl );
+	}
+	return 0;
+}
+
+void terminate ( int sig ) {
 	sound_stop();
 
 	perl_destruct(my_perl);
 	perl_free(my_perl);
 	PERL_SYS_TERM();
 
-
-	return 0;
+	pthread_mutex_destroy( &mutex_for_perl );
+	exit(0);
 }
+
 

@@ -13,12 +13,11 @@ otoperld: $(OBJS)
 .c.o:
 	$(CC) $(CFLAGS) $(PERLCCFLAGS) -c $<
 
-.d.o:
-
-.c.d:
-    $(SHELL) -ec '$(CC) -MM $(CFLAGS) $(PERLCCFLAGS) -c $< \
-                  | sed '\"s/\($*\)\.o[ :]*/\1.o $@ : /g'\" > $@; \
-                  [ -s $@ ] || rm -f $@'
+%.d: %.c
+	 @set -e; rm -f $@; \
+	  $(CC) -MM $(CFLAGS) $(PERLCCFLAGS) -c $< > $@.$$$$; \
+	  sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	  rm -f $@.$$$$
 
 clean: 
 	rm $(OBJS)

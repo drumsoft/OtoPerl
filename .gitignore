@@ -1,4 +1,5 @@
 _Inline
 *.o
+*.d
 *~
 obsolete

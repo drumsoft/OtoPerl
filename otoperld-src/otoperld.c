@@ -35,14 +35,19 @@ char *perl_code_liveeval(char *code);
 
 // ------------------------------------------------ otoperld implimentation
 codeserver *cs;
+
 pthread_mutex_t mutex_for_perl;
+pthread_cond_t cond_for_perl;
+
 PerlInterpreter *my_perl;
+bool int_perl_runtime_error;
 
 void otoperld_start(int port, int perlargc, char **perlargv, char **env) {
 	printf("otoperld - OtoPerl sound server - start with %s.\n", perlargv[1]);
 	printf("***WARNING*** otoperld port is %d. You must not expose it to network. Blocking the port with firewall is strongly recommended.\n", port);
 
 	pthread_mutex_init( &mutex_for_perl , NULL );
+	pthread_cond_init( &cond_for_perl, NULL );
 
 	PERL_SYS_INIT3(&perlargc, &perlargv, &env);
 	my_perl = perl_alloc();
@@ -54,6 +59,7 @@ void otoperld_start(int port, int perlargc, char **perlargv, char **env) {
 	PUSHMARK(SP);
 	call_pv("perl_render_init", G_DISCARD|G_NOARGS);
 
+	int_perl_runtime_error = false;
 	audiounit_start(perl_audio_callback);
 
 	cs = codeserver_init(port, perl_code_liveeval);
@@ -65,7 +71,8 @@ void otoperld_start(int port, int perlargc, char **perlargv, char **env) {
 	}
 
 	while(1){
-		CFRunLoopRunInMode(kCFRunLoopDefaultMode, 10, false);
+		if (!cs->running) otoperld_stop(0);
+		CFRunLoopRunInMode(kCFRunLoopDefaultMode, 2, false);
 	}
 }
 
@@ -79,6 +86,7 @@ void otoperld_stop ( int sig ) {
 	PERL_SYS_TERM();
 
 	pthread_mutex_destroy( &mutex_for_perl );
+	pthread_cond_destroy( &cond_for_perl );
 
 	printf("otoperld - OtoPerl sound server - stop.\n");
 
@@ -97,26 +105,37 @@ void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) {
 	XPUSHs(sv_2mortal(newSViv(channels)));
 	PUTBACK;
 	
-	int count = call_pv("perl_render", G_ARRAY);
+	int count = call_pv("perl_render", G_ARRAY|G_EVAL);
 	
-	if (count != frames * channels) croak("Big trouble\n");
 	SPAGAIN;
-	UInt32 channel, frame;
-	for (channel = 0; channel < channels; channel++)
-		for (frame = 0; frame < frames; frame++)
-			((Float32 *)( outbuf[channel].mData ))[frame] = POPn;
+	if (SvTRUE(ERRSV)) {
+		if ( ! int_perl_runtime_error ) {
+			int_perl_runtime_error = true;
+			STRLEN n_a;
+			printf ("perl runtime error: %s", SvPV(ERRSV, n_a));
+		}
+	} else {
+		int_perl_runtime_error = false;
+		if (count != frames * channels) croak("Big trouble\n");
+		UInt32 channel, frame;
+		for (channel = 0; channel < channels; channel++)
+			for (frame = 0; frame < frames; frame++)
+				((Float32 *)( outbuf[channel].mData ))[frame] = POPn;
+	}
 	PUTBACK;
 	
 	FREETMPS;
 	LEAVE;
 
 	pthread_mutex_unlock( &mutex_for_perl );
+	pthread_cond_signal( &cond_for_perl );
 }
 
 char *perl_code_liveeval(char *code) {
 	char * rettext = NULL;
 
 	pthread_mutex_lock( &mutex_for_perl );
+	pthread_cond_wait( &cond_for_perl, &mutex_for_perl );
 
 	eval_pv(code, FALSE);
 

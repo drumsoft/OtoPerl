@@ -114,7 +114,7 @@ void *codeserver__run(void *codeserver_self) {
 		}
 
 		codeserver_text *cstext = codeserver_text_new();
-		struct timeval recv_timeout = {0, 100*1000};
+		struct timeval recv_timeout = {1, 0};
 		fd_set recv_fds;
 		FD_ZERO(&recv_fds);
 		FD_SET(conn_fd, &recv_fds);
@@ -136,30 +136,36 @@ void *codeserver__run(void *codeserver_self) {
 				if (rsize < BUFFERSIZE) break;
 			}
 		};
-		char *code = codeserver_text_join(cstext);
-		printf("%d bytes code to eval.\n", cstext->size);
-//		printf("[CODE START]\n%s\n[CODE END]\n", code);
-		codeserver_text_destroy(cstext);
 
-		char *ret;
-		char *codestart = strstr(code, "\n\n");
-		if (codestart != NULL) {
-			ret = self->callback(codestart+2);
+		if (cstext->size == 0) {
+			printf("no code received ?.\n", cstext->size);
+			codeserver_text_destroy(cstext);
 		}else{
-			ret = "failed to find code.";
+			char *code = codeserver_text_join(cstext);
+			printf("%d bytes code to eval.\n", cstext->size);
+	//		printf("[CODE START]\n%s\n[CODE END]\n", code);
+			codeserver_text_destroy(cstext);
+	
+			char *ret;
+			char *codestart = strstr(code, "\n\n");
+			if (codestart != NULL) {
+				ret = self->callback(codestart+2);
+			}else{
+				ret = "failed to find code.";
+			}
+	
+			if (ret == NULL) {
+				write(conn_fd, "200 OK\n", 7);
+				write(conn_fd, "Content-Type: text/plain\n\n", 26);
+			}else{
+				write(conn_fd, "400 eval failed\n", 16);
+				write(conn_fd, "Content-Type: text/plain\n\n", 26);
+				write(conn_fd, ret, strlen(ret));
+			}
+	
+			free(ret);
+			free(code);
 		}
-
-		if (ret == NULL) {
-			write(conn_fd, "200 OK\n", 7);
-			write(conn_fd, "Content-Type: text/plain\n\n", 26);
-		}else{
-			write(conn_fd, "400 eval failed\n", 16);
-			write(conn_fd, "Content-Type: text/plain\n\n", 26);
-			write(conn_fd, ret, strlen(ret));
-		}
-
-		free(ret);
-		free(code);
 
 		if ( close(conn_fd) < 0) 
 			return codeserver__error(self, "close failed.");

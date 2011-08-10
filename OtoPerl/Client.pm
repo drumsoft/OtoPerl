@@ -5,6 +5,7 @@ use strict;
 
 use LWP::UserAgent;
 
+# ---------------------------------------- public
 sub send {
 	my $class = shift;
 	my $options = shift;
@@ -16,6 +17,7 @@ sub send {
 	}
 }
 
+# ---------------------------------------- private
 sub _send {
 	my $url = shift;
 	my $file = shift;
@@ -40,6 +42,31 @@ sub _send {
 sub _say {
 	print shift;
 	print "\n";
+}
+
+# ---------------------------------------- utilities
+sub read_options {
+	my $defaults = shift;
+	my $arglist = shift;
+	while ( $_ = shift @$arglist ) {
+		if ($_ =~ /^\-\w+$/) {
+			exists $defaults->{$_} or die "unknown option '$_'.";
+			@$arglist or die "no value for option '$_'.";
+			$defaults->{$_} = shift @$arglist;
+		}else{
+			unshift @$arglist, $_;
+			return $defaults;
+		}
+	}
+	@$arglist or die "no input files.";
+}
+
+sub test_input_files {
+	my $arglist = shift;
+	@$arglist or die "no input files.";
+	foreach (@$arglist) {
+		-r $_ or die "input file '$_' not exists or readable.";
+	}
 }
 
 1;

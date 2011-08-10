@@ -1,52 +1,39 @@
-#!/usr/bin/perl
+// OtoPerl - live sound programming environment with Perl.
+// OtoPerl::otoperld - sound processing server for OtoPerl.
+// Otoperl::otoperld::audiounit - run AudioUnit for otoperld.
+/*
+    OtoPerl - live sound programming environment with Perl.
+    Copyright (C) 2011- Haruka Kataoka
 
-use strict;
-use warnings;
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-my $default_LDDLFLAGS;
-BEGIN {
-	use Config;
-	$default_LDDLFLAGS = $Config{lddlflags};
-}
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-use Inline C => Config =>
-    LDDLFLAGS => $default_LDDLFLAGS
-     . ' -framework CoreServices -framework CoreAudio -framework AudioUnit';
-use Inline 'C';
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
-
-my $frame = 0;
-my @c;
-sub render_callback {
-	my $size = shift;
-	my $channels = shift;
-	my (@w, $i, $v);
-	for ($i = $size-1; $i >= 0; $i--) {
-		my $pan = 0.5 + 0.5 * sin( 3.1415 * 2 * $frame * 1 / 48000 );
-		my $fm = 0.5 + 0.5 * sin( 3.1415 * 2 * $frame * 100 / 48000 );
-		$v = 0.8 * sin( 3.1415 * 2 * ($frame+5*$fm) * 880 / 48000 );
-#		$v = rand(2) - 1;
-#		$v = int($frame / 50) % 2 ? 0.8 : -0.8;
-		$w[$i + $size*0] = $v * $pan;
-		$w[$i + $size*1] = $v * (1-$pan);
-		$frame++;
-	}
-	return @w;
-}
-
-sound_start();
-sleep(1);
-sound_stop();
-
-__END__
-__C__
 #include <CoreServices/CoreServices.h>
-#include <stdio.h>
-#include <unistd.h>
 
-#include <AudioUnit/AudioUnit.h>
-#include <CoreAudio/CoreAudio.h>
- 
+#include "audiounit.h"
+
+// ----------------------------------------------------- private functions
+OSStatus	MyRenderer_Perl(void 				*inRefCon, 
+				AudioUnitRenderActionFlags 	*ioActionFlags, 
+				const AudioTimeStamp 		*inTimeStamp, 
+				UInt32 						inBusNumber, 
+				UInt32 						inNumberFrames, 
+				AudioBufferList 			*ioData);
+
+void CreateDefaultAU();
+void CloseDefaultAU();
+// -------------------------------------------- audiounit implimentation
 
 // THESE values can be read from your data source
 // they're used to tell the DefaultOutputUnit what you're giving it
@@ -64,48 +51,26 @@ const UInt32 theBytesInAPacket = 4;
 const UInt32 theBitsPerChannel = 32;
 const UInt32 theBytesPerFrame = 4;
 // these are the same regardless of format
-const UInt32 theFramesPerPacket = 1; // this shouldn't change
+const UInt32 theFramesPerPacket = 1; // this shouldn't change'
 
 AudioUnit	gOutputUnit;
 
+void (*audiounit_callback)(AudioBuffer *outbuf, UInt32 frames, UInt32 channels);
 
-
-OSStatus	MyRenderer(void 				*inRefCon, 
+OSStatus	MyRenderer_Perl(void 				*inRefCon, 
 				AudioUnitRenderActionFlags 	*ioActionFlags, 
 				const AudioTimeStamp 		*inTimeStamp, 
 				UInt32 						inBusNumber, 
 				UInt32 						inNumberFrames, 
 				AudioBufferList 			*ioData) {
-	UInt32 frame;
-	UInt32 channel;
-	UInt32 inChannel = ioData->mNumberBuffers;
-	int count;
-
-	dSP;
-	ENTER;
-	SAVETMPS;
 	
-	PUSHMARK(SP);
-	XPUSHs(sv_2mortal(newSViv(inNumberFrames)));
-	XPUSHs(sv_2mortal(newSViv(inChannel)));
-	PUTBACK;
+	audiounit_callback(ioData->mBuffers
+		, inNumberFrames, ioData->mNumberBuffers);
 	
-	count = call_pv("main::render_callback", G_ARRAY);
-	
-	if (count != inNumberFrames * inChannel) croak("Big trouble\n");
-	SPAGAIN;
-	for (channel = 0; channel < inChannel; channel++)
-		for (frame = 0; frame < inNumberFrames; frame++)
-			((Float32 *)( ioData->mBuffers[channel].mData ))[frame] = POPn;
-	PUTBACK;
-	
-	FREETMPS;
-	LEAVE;
-
 	return noErr;
 }
 
-// ---------------------------
+
 void	CreateDefaultAU() {
 	OSStatus err = noErr;
 
@@ -125,7 +90,7 @@ void	CreateDefaultAU() {
 
 	// Set up a callback function to generate output to the output unit
     AURenderCallbackStruct input;
-	input.inputProc = MyRenderer;
+	input.inputProc = MyRenderer_Perl;
 	input.inputProcRefCon = NULL;
 
 	err = AudioUnitSetProperty (gOutputUnit, 
@@ -178,8 +143,9 @@ void	CreateDefaultAU() {
 void CloseDefaultAU () {
 	OSStatus err = noErr;
 
-	// REALLY after you're finished playing STOP THE AUDIO OUTPUT UNIT!!!!!!	
-	// but we never get here because we're running until the process is nuked...	verify_noerr (AudioOutputUnitStop (gOutputUnit));
+	// REALLY after you're finished playing STOP THE AUDIO OUTPUT UNIT!!!!!!	'
+	// but we never get here because we're running until the process is nuked...	'
+	verify_noerr (AudioOutputUnitStop (gOutputUnit));
 	
 	err = AudioUnitUninitialize (gOutputUnit);
 	if (err) { printf ("AudioUnitUninitialize=%ld\n", (long int)err); return; }
@@ -188,12 +154,16 @@ void CloseDefaultAU () {
 }
 
 // ---------------------------
-void sound_start() {
-	printf("start\n");
+void audiounit_start( void (*callback)(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) ) {
+	audiounit_callback = callback;
 	CreateDefaultAU();
+	printf("audiounit start.\n");
 }
 
-void sound_stop() {
-	printf("stop\n");
+void audiounit_stop() {
 	CloseDefaultAU();
+	printf("audiounit stop.\n");
 }
+
+
+

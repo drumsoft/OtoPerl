@@ -1,16 +1,26 @@
+OtoPerl - live sound programming environment with Perl.
+
 OtoPerl は perl でリアルタイムサウンド生成を行うプログラム環境です。
 
-OtoPerl だけの特徴:
- * 全てPerl
+
+[feature]
+ * Coding with Perl
+   - Low learning cost for experienced user. Even a beginner can find a lot of resources to learn.
+   - You can use many cpan modules. It's rare system that you can aggregate your website's access log or analyse lexically your twitter timeline while generating sound.
+ * Dynamic
+   - While performance (generating sounds) with OtoPerl, you can change (or overwrite) generater source code. It allows "coding as playing" live performance.
+ * Modules
+   - Extending and combining OtoPerl prototype modules, You can quickly create new sound generater program.
+ * with familiar environment
+   - It's not tied to specific IDE. Please code with familiar editors and post it to Otoperl server with 'otoperlc' client script.
+
+【OtoPerl の特徴】
+ * Perlコーディング
    - 経験者には学習コストが低く、初心者でも多くの学習リソースを得る事ができます。
-   - 多くの便利な CPAN ライブラリが使用できます。Webサイトのログを集計したり、Twitterタイムラインの字句解析を行いながらサウンド生成ができるシステムはそう多くありません。
+   - 多くの便利な CPAN モジュールが使用できます。Webサイトのログを集計したり、Twitterタイムラインの字句解析を行いながらサウンド生成ができるシステムはそう多くありません。
  * ダイナミック
    - 演奏中（サウンド生成中）に、生成に使用するソースコードを差し替える事ができます。コーディングがそのままライブ演奏である様なパフォーマンスも可能です。
-
-その他のシステムにも存在する特徴:
-
  * モジュール構成
-   - 多くのプロトタイプ・モジュールを拡張し組み合わせる事で、自分のサウンド生成プログラムを素早く構成できます。
- * サーバ・クライアント
+   - プロトタイプ・モジュールを拡張し組み合わせる事で、自分のサウンド生成プログラムを素早く構成できます。
+ * 使い慣れた環境で
    - OtoPerl コードを書く為の専用の開発環境はありません。使い慣れたエディタでソースコードを書いて、 otoperlc クライアントスクリプトでサーバに送信して下さい。
-

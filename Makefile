@@ -1,20 +1,17 @@
-CC = $(shell perl -MConfig -e "print \$$Config{cc}")
-PERLCCFLAGS = $(shell perl -MExtUtils::Embed -e ccopts)
-PERLLDFLAGS = $(shell perl -MExtUtils::Embed -e ldopts)
+MAKE = make
+CP = cp
 
-FRAMEWORKS = -framework CoreServices -framework CoreAudio -framework AudioUnit
+otoperld: otoperld-src/otoperld
+	$(CP) $^ .
 
-CFLAGS = -g -Wall
-OBJS = c-otoperld.o
+otoperld-start.pl: otoperld-src/otoperld-start.pl
+	$(CP) $^ .
 
-c-otoperld: $(OBJS)
-	$(CC) $(PERLLDFLAGS) $(FRAMEWORKS) -o $@ $^
-
-.c.o:
-	$(CC) $(CFLAGS) $(PERLCCFLAGS) -c $<
+otoperld-src/otoperld:
+	$(MAKE) -C otoperld-src
 
 clean: 
-	rm $(OBJS)
+	$(MAKE) clean -C otoperld-src
 
-test: c-otoperld
-	./c-otoperld 2
+test: otoperld otoperld-start.pl
+	./otoperld

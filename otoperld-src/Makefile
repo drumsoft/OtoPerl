@@ -13,7 +13,16 @@ otoperld: $(OBJS)
 .c.o:
 	$(CC) $(CFLAGS) $(PERLCCFLAGS) -c $<
 
+.d.o:
+
+.c.d:
+    $(SHELL) -ec '$(CC) -MM $(CFLAGS) $(PERLCCFLAGS) -c $< \
+                  | sed '\"s/\($*\)\.o[ :]*/\1.o $@ : /g'\" > $@; \
+                  [ -s $@ ] || rm -f $@'
+
 clean: 
 	rm $(OBJS)
+	rm $(OBJS:.o=.d)
 	rm otoperld
 
+include $(OBJS:.o=.d)

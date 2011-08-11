@@ -138,7 +138,7 @@ void *codeserver__run(void *codeserver_self) {
 		};
 
 		if (cstext->size == 0) {
-			printf("no code received ?.\n", cstext->size);
+			printf("no code received ?.\n");
 			codeserver_text_destroy(cstext);
 		}else{
 			char *code = codeserver_text_join(cstext);

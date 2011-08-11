@@ -1,3 +1,77 @@
+#パフォーマンス向上のための検討候補
+
+http://perldoc.jp/docs/perl/5.10.0/perlcall.pod#LIGHTWEIGHT32CALLBACKS
+軽量コールバック
+
+マルチスレッドで複数の音源を別々に生成する
+（ミックスをC側でやればさらに早そう）
+
+#パフォーマンスに関するメモ
+
+同時に $m の波形を生成してmix
+	$m	CPU	結果
+	4	52%	大丈夫
+	5	62%	大丈夫
+	6	70%	たまにブチる
+	8	88%	ブチブチ言う
+	単純に計算量が多いと重くなる
+
+$m = 6 で 波形の生成内容を変更
+	full      	70%
+	no amp    	57-64% (7-13%)
+	no square 	63%    (7%)
+	no stair  	65%    (5%)
+	no sine   	70%    (0%) (sin関数をやめて * / & ?: で正弦波を生成)
+	「特に遅い演算」はなくて、全ての演算で少しづつ遅くなる。
+
+コンパイルオプションを変更
+	-g, -O1, -O2, -O3 と変えても変化しなかった。
+
+使用するPerlを変更
+	Mac OS X の perl, MacPorts の perl どちらも同じだった。
+
+それはそうと、実行する度に微妙にCPU占有率が変わるのはなんだろう…
+（近い時間では大体同じ数値になるけど）
+他のプロセスに影響受けるとか？それか割り当てられるコアによったりとか？
+
+#コンパイルオプションに関するメモ
+[MacPorts]
+/usr/bin/gcc-4.2 
+	-O2 -Wall 
+	-pipe -O2 -arch x86_64 -fno-common -DPERL_DARWIN 
+	-I/opt/local/include 
+	-no-cpp-precomp -fno-strict-aliasing -fstack-protector 
+	-I/opt/local/include 
+	-I/opt/local/lib/perl5/5.12.3/darwin-thread-multi-2level/CORE 
+	-c main.c
+/usr/bin/gcc-4.2 
+	-L/opt/local/lib 
+	-arch x86_64 -fstack-protector 
+	-L/opt/local/lib/perl5/5.12.3/darwin-thread-multi-2level/CORE 
+	-lperl -ldl -lm -lutil -lc 
+	-framework CoreServices -framework CoreAudio -framework AudioUnit 
+	-o otoperld 
+	audiounit.o codeserver.o otoperld.o main.o
+
+[MacOSX]
+gcc-4.2 
+	-O2 -Wall 
+	-arch x86_64 -arch i386 -arch ppc 
+	-g -pipe -fno-common 
+	-DPERL_DARWIN -fno-strict-aliasing 
+	-I/usr/local/include 
+	-I/System/Library/Perl/5.10.0/darwin-thread-multi-2level/CORE 
+	-c main.c
+
+gcc-4.2 
+	-arch x86_64 -arch i386 -arch ppc 
+	-L/usr/local/lib 
+	-L/System/Library/Perl/5.10.0/darwin-thread-multi-2level/CORE 
+	-lperl -ldl -lm -lutil -lc 
+	-framework CoreServices -framework CoreAudio -framework AudioUnit 
+	-o otoperld 
+	audiounit.o codeserver.o otoperld.o main.o
+
 #マイルストーン
 基本的なDSP機能のひな形を作る
 	タイミング管理

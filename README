@@ -47,8 +47,8 @@ Mac OS X (10.6 ? or Later ?)
  * [launch options]
    - ./otoperld -p 99999      Port number to listen. default is 14609.
    - ./otoperld startfilename Perl script evaluated when server launched. dafault is 'otoperld-start.pl'.
-   - ./otoperlc -port 99999   Port number to post. default is 14609.
-   - ./otoperlc -host myhost  Host name to post. default is localhost.
+   - ./otoperlc -p 99999   Port number to post. default is 14609.
+   - ./otoperlc -h myhost  Host name to post. default is localhost.
 
 【使い方】
  * './otoperld' で OtoPerl サーバを起動します。
@@ -57,6 +57,6 @@ Mac OS X (10.6 ? or Later ?)
  * [起動オプション]
    - ./otoperld -p 99999      サーバの待ち受けるポート番号を設定します。デフォルトは 14609 です。
    - ./otoperld startfilename サーバ起動時に評価されるPerlスクリプトを設定します。デフォルトは otoperld-start.pl です。
-   - ./otoperlc -port 99999   クライアントが送信先ポート番号を設定します。デフォルトは 14609 です。
-   - ./otoperlc -host myhost  クライアントの送信先を設定します。デフォルトは localhost です。
+   - ./otoperlc -p 99999   クライアントが送信先ポート番号を設定します。デフォルトは 14609 です。
+   - ./otoperlc -h myhost  クライアントの送信先を設定します。デフォルトは localhost です。
 

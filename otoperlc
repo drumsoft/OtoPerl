@@ -7,8 +7,12 @@ use OtoPerl::Client;
 
 my $options = OtoPerl::Client::read_options({
 	-host => 'localhost',
-	-port => '14609'
+	-port => '14609',
+	-h    => undef,
+	-p    => undef,
 }, \@ARGV);
+defined $options->{-p} and $options->{-port} = $options->{-p};
+defined $options->{-h} and $options->{-host} = $options->{-h};
 
 OtoPerl::Client::test_input_files(\@ARGV);
 

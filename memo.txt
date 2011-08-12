@@ -6,6 +6,8 @@ http://perldoc.jp/docs/perl/5.10.0/perlcall.pod#LIGHTWEIGHT32CALLBACKS
 マルチスレッドで複数の音源を別々に生成する
 （ミックスをC側でやればさらに早そう）
 
+バッファリングの量を調整(CPU使用量が上がっても音が切れない様に)
+
 #パフォーマンスに関するメモ
 
 同時に $m の波形を生成してmix

@@ -35,6 +35,7 @@ otoperld: $(OBJS)
 	  rm -f $@.$$$$
 
 clean: 
+	rm otoperld
 	rm $(OBJS)
 	rm $(OBJS:.o=.d)
 	rm *.d.[0-9][0-9][0-9][0-9][0-9]

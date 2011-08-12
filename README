@@ -1,62 +1,143 @@
+= OtoPerl READE =
+
 OtoPerl - live sound programming environment with Perl.
 
 OtoPerl は perl でリアルタイムサウンド生成を行うプログラム環境です。
 
 
-[feature]
+== feature ==
  * Coding with Perl
-   - Low learning cost for experienced user. Even a beginner can find a lot of resources to learn.
-   - You can use many cpan modules. It's rare system that you can aggregate your website's access log or analyse lexically your twitter timeline while generating sound.
+   * Low learning cost for experienced user. Even a beginner can find a lot of resources to learn.
+   * You can use many cpan modules. It's rare system that you can aggregate your website's access log or analyse lexically your twitter timeline while generating sound.
  * Dynamic
-   - While performance (generating sounds) with OtoPerl, you can change (or overwrite) generater source code. It allows "coding as playing" live performance.
+   * While performance (generating sounds) with OtoPerl, you can change (or overwrite) sound generater Perl script ('OtoPerl script'). It allows "coding as playing" live performance.
  * Modules
-   - Extending and combining OtoPerl prototype modules, You can quickly create new sound generater program.
+   * Extending and combining OtoPerl prototype modules, You can quickly create new OtoPerl script.
  * with familiar environment
-   - It's not tied to specific IDE. Please code with familiar editors and post it to Otoperl server with 'otoperlc' client script.
+   * It's not tied to specific IDE. Please write OtoPerl script with familiar editors and post it to Otoperl server with 'otoperlc' client script.
 
-【OtoPerl の特徴】
+== OtoPerl の特徴 ==
  * Perlコーディング
-   - 経験者には学習コストが低く、初心者でも多くの学習リソースを得る事ができます。
-   - 多くの便利な CPAN モジュールが使用できます。Webサイトのログを集計したり、Twitterタイムラインの字句解析を行いながらサウンド生成ができるシステムはそう多くありません。
+   * 経験者には学習コストが低く、初心者でも多くの学習リソースを得る事ができます。
+   * 多くの便利な CPAN モジュールが使用できます。Webサイトのログを集計したり、Twitterタイムラインの字句解析を行いながらサウンド生成ができるシステムはそう多くありません。
  * ダイナミック
-   - 演奏中（サウンド生成中）に、生成に使用するソースコードを差し替える事ができます。コーディングがそのままライブ演奏である様なパフォーマンスも可能です。
+   * 演奏中（サウンド生成中）に、サウンド生成に使用するPerlスクリプト('OtoPerlスクリプト')を差し替える事ができます。コーディングがそのままライブ演奏である様なパフォーマンスも可能です。
  * モジュール構成
-   - プロトタイプ・モジュールを拡張し組み合わせる事で、自分のサウンド生成プログラムを素早く構成できます。
+   * プロトタイプ・モジュールを拡張し組み合わせる事で、自分の OtoPerlスクリプト を素早く構成できます。
  * 使い慣れた環境で
-   - OtoPerl コードを書く為の専用の開発環境はありません。使い慣れたエディタでソースコードを書いて、 otoperlc クライアントスクリプトでサーバに送信して下さい。
+   * OtoPerlスクリプト を書く為の専用の開発環境はありません。使い慣れたエディタでコードを書いて、 otoperlc クライアントでサーバに送信して下さい。
 
 
-[requirement] 
-Mac OS X (10.6 ? or Later ?)
-to compiling... gcc (included in Mac OS X Developer Tools)
+== requirement ==
+ * Mac OS X (10.6 ? or Later ?)
+ * gcc (コンパイル用, included in Mac OS X Developer Tools)
 
-【必須環境】
-Mac OS X (10.6 ? or Later ?)
-コンパイルする場合は… gcc (Mac OS X の開発環境に含まれています)
-
-
-[How to build] simply 'make'
-
-【ビルド】 'make' でコンパイルできます
+== 必須環境 ==
+ * Mac OS X (10.6 ? or Later ?)
+ * gcc (コンパイル用, Mac OS X の開発環境に含まれています)
 
 
-[How to use]
- * './otoperld' to launch OtoPerl server.
- * './otoperlc otoperl-test.pl' to post Perl script to server.
- * the server evals posted script, the sound changed as coded in it. try to change otoperl-test.pl with editor and re-post it.
- * [launch options]
-   - ./otoperld -p 99999      Port number to listen. default is 14609.
-   - ./otoperld startfilename Perl script evaluated when server launched. dafault is 'otoperld-start.pl'.
-   - ./otoperlc -p 99999   Port number to post. default is 14609.
-   - ./otoperlc -h myhost  Host name to post. default is localhost.
+== How to build ==
+ * simply 'make' to build otoperld.
+ * the otoperld binary included in repository is compiled for 64-bit intel CPU (x86_64).
+   * I failed compile it for i386 and ppc because there are no perl binary to link. Please tell me any hints about it.
 
-【使い方】
- * './otoperld' で OtoPerl サーバを起動します。
- * './otoperlc otoperl-test.pl' でPerlスクリプトをサーバに送信します。
- * サーバは送信されたスクリプトを評価(実行)し、スクリプトの内容に応じて音が変化します。 otoperl-test.pl をエディタで変更して、再度送信してみて下さい。
- * [起動オプション]
-   - ./otoperld -p 99999      サーバの待ち受けるポート番号を設定します。デフォルトは 14609 です。
-   - ./otoperld startfilename サーバ起動時に評価されるPerlスクリプトを設定します。デフォルトは otoperld-start.pl です。
-   - ./otoperlc -p 99999   クライアントが送信先ポート番号を設定します。デフォルトは 14609 です。
-   - ./otoperlc -h myhost  クライアントの送信先を設定します。デフォルトは localhost です。
+== ビルド ==
+ * 'make' で otoperld をコンパイルできます。
+ * リポジトリに含まれる otoperld のバイナリは 64bit intel CPU (x86_64) 向けにコンパイルされています。
+   * x86_64 以外のPerlバイナリにリンクさせる方法がわからず i386 や ppx 向けのコンパイルができませんでした。ヒントご存知の方教えて下さい。
+
+
+== *** WARNINGS (READ BEFORE RUN) *** ==
+ * You must not expose otoperld port to network. It enable someone on your network to execute arbitrary commands on your computer.
+ * To avoid the risk, block the port with the Mac OS X firewall by clicking "Deny" on the dialog asks "accept incoming network connections?". it will pop-ups when you launch otoperld first.
+ * in default, otoperld use port 14609.
+ * If you want run otoperld and otoperlc on separate computers, do it on closed LAN that no untrusted users on.
+
+== *** ご注意 (実行前にお読み下さい) *** ==
+ * otoperld のポートをネットワークに解放すると大変危険です。ネットワーク上の誰かが、あなたのコンピュータ上であらゆるコマンドを実行できる状態になります。
+ * 危険を回避するため、Mac OS Xのファイアウォールでポートを守りましょう。それには、 otoperld を初めて起動した時に出てくる「受信接続を許可しますか？」と尋ねるダイアログに "拒否" と答えて下さい。
+ * otoperld が使用するデフォルトのポート番号は 14609 です。
+ * LAN内で otoperld と otoperlc を別々のコンピュータで実行したい場合もあると思います。その場合は、信頼できないユーザがいない、閉じられたLAN内で利用して下さい。
+
+
+== Simple Tutrial ==
+ 1. './otoperld' to launch OtoPerl server.
+   * sound processing start with test sine wave.
+ 2. './otoperlc otoperl-test.pl' to post OtoPerl script to server.
+   * otoperl-test.pl contains perl code that generate sine wave and amp modulate it. the sound generation OtoPerl script running in otoperld is overwritten by it and the generating sound will be amp modulated.
+ 3. edit otoperl-test.pl .
+   * example: Uncomment "transform it to square wave" line, it transform sine wave to square wave.
+ 4. './otoperlc otoperl-tutorial.pl' to repost it.
+   * the generating sound will be changed as coded in OtoPerl script.
+
+== 簡単なチュートリアル ==
+ 1. './otoperld' で OtoPerl サーバを起動します。
+   * サウンド生成が開始され、サイン波のテストトーンが鳴りだします。
+ 2. './otoperlc otoperl-tutorial.pl' で、 OtoPerlスクリプト をサーバに送信します。
+   * otoperl-tutorial.pl にはサイン波にアンプモジュレーションを加えたコードが書かれています。otoperld がサウンド生成する OtoPerlスクリプト がこれによって上書きされ、生成されるサウンドにアンプモジュレーションがかかります。
+ 3. otoperl-test.pl をエディタで変更して下さい。
+   * 例: "transform it to square wave" という行のコメントを外してサイン波を矩形波に変換
+ 4. './otoperlc otoperl-tutorial.pl' で、再度 OtoPerlスクリプト をサーバに送信します。
+   * エディタの変更に応じて、生成されるサウンドが変わります。
+
+
+== launch options ==
+ * ./otoperld -p 99999   Port number to listen. default is 14609.
+ * ./otoperld filename   OtoPerl script ran when server launched. dafault is 'otoperld-start.pl'.
+ * ./otoperlc -p 99999   Port number to post. default is 14609.
+ * ./otoperlc -h myhost  Host name to post. default is localhost.
+
+== 起動オプション ==
+ * ./otoperld -p 99999   サーバの待ち受けるポート番号を設定します。デフォルトは 14609 です。
+ * ./otoperld filename   サーバ起動時に実行される OtoPerlスクリプト を設定します。デフォルトは otoperld-start.pl です。
+ * ./otoperlc -p 99999   クライアントが送信先ポート番号を設定します。デフォルトは 14609 です。
+ * ./otoperlc -h myhost  クライアントの送信先を設定します。デフォルトは localhost です。
+
+
+== file details ==
+ * otoperld               Sound generation server program for OtoPerl.
+ * otoperld-start.pl      OtoPerl script that otoperld load (in default) when it launched.
+ * otoperlc               Client program that post OtoPerl script to otoperld.
+ * otoperl-tutorial.pl    OtoPerl script : for tutrial.
+ * otoperl-sample.pl      OtoPerl script : a sample.
+ * otoperl-silence.pl     OtoPerl script : for silence.
+ * otoperl-performance.pl OtoPerl script : for performance testing.
+ * OtoPerl                Directory for modules called by otoperlc and OtoPerl script.
+   * Client.pm            Modules called by otoperlc.
+
+ * README                 is you're reading.
+ * LICENSE                GNU GPL 3 (or later)
+ * memo.txt               a disorganized memo for developing.
+
+ * Makefile               
+ * otoperld-src           source files for otoperld.
+   * audiounit.h , audiounit.c   AudioUnit launcher.
+   * codeserver.h, codeserver.c  Simple HTTP Server.
+   * otoperld.h  , otoperld.c    the Body of otoperld.
+   * main.c                      otoperld launch code.
+   * Makefile                    
+
+== 含まれるファイルの詳細 ==
+ * otoperld               OtoPerl のサウンド生成サーバ 実行プログラム
+ * otoperld-start.pl      otoperld が(デフォルトで)最初にロードする OtoPerlスクリプト
+ * otoperlc               otoperld に OtoPerlスクリプト を送信するクライアント
+ * otoperl-tutorial.pl    OtoPerlスクリプト: チュートリアル用
+ * otoperl-sample.pl      OtoPerlスクリプト: サンプル
+ * otoperl-silence.pl     OtoPerlスクリプト: 無音状態
+ * otoperl-performance.pl OtoPerlスクリプト: パフォーマンスのテストに使用しているもの
+ * OtoPerl                otoperlc や OtoPerlスクリプト から呼ばれるモジュールを保存するフォルダ
+   * Client.pm            otoperlc が使用するモジュール
+
+ * README                 is you're reading.
+ * LICENSE                GNU GPL 3 (or later)
+ * memo.txt               開発中の雑多なメモ
+
+ * Makefile               
+ * otoperld-src           otoperld のソースファイル
+   * audiounit.h , audiounit.c   AudioUnit を起動するモジュール
+   * codeserver.h, codeserver.c  簡単なHTTPサーバ
+   * otoperld.h  , otoperld.c    otoperld の本体
+   * main.c                      otoperld の起動コード
+   * Makefile                    
 

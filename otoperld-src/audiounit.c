@@ -39,10 +39,6 @@ void CloseDefaultAU();
 // they're used to tell the DefaultOutputUnit what you're giving it
 const Float64			sSampleRate = 48000;
 const int				sNumChannels = 2;
-const int				sWhichFormat = 32;
-
-const double			sAmplitude = 0.8;
-const double			sToneFrequency = 880.0;
 
 const UInt32 theFormatID = kAudioFormatLinearPCM;
 // these are set based on which format is chosen

@@ -143,13 +143,14 @@ void *codeserver__run(void *codeserver_self) {
 		}else{
 			char *code = codeserver_text_join(cstext);
 			printf("%d bytes code to eval.\n", cstext->size);
-	//		printf("[CODE START]\n%s\n[CODE END]\n", code);
 			codeserver_text_destroy(cstext);
 	
 			char *ret;
-			char *codestart = strstr(code, "\n\n");
+			char *codestart = strstr(code, "\r\n\r\n");
 			if (codestart != NULL) {
-				ret = self->callback(codestart+2);
+				codestart += 4;
+				//printf("[CODE START]\n%s\n[CODE END]\n", codestart);
+				ret = self->callback(codestart);
 			}else{
 				ret = "failed to find code.";
 			}

@@ -4,3 +4,5 @@ _Inline
 *.d.[0-9][0-9][0-9][0-9][0-9]
 *~
 obsolete
+my-*.pl
+perlxsi.c

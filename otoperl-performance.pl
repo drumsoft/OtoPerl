@@ -4,7 +4,7 @@ use warnings;
 sub perl_render {
 	my $size = shift;
 	my $channels = shift;
-	my (@w, $i, $v, @v, $k, $f, $amp);
+	my (@w, $i, $v, @v, $k, $f, $amp, $freq);
 	my $m = 4;
 	my $l = 10000;
 	for ($i = $size-1; $i >= 0; $i--) {

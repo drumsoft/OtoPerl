@@ -15,7 +15,7 @@ PERLLDFLAGS = $(shell $(PERL) -MExtUtils::Embed -e ldopts | sed -e "s/-arch  *[^
 FRAMEWORKS = -framework CoreServices -framework CoreAudio -framework AudioUnit
 
 # otoperld
-OBJS = audiounit.o codeserver.o otoperld.o main.o
+OBJS = perlxsi.o audiounit.o codeserver.o otoperld.o main.o
 
 
 all: otoperld
@@ -34,11 +34,14 @@ otoperld: $(OBJS)
 	  sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	  rm -f $@.$$$$
 
+perlxsi.c: 
+	perl -MExtUtils::Embed -e xsinit -- -o perlxsi.c
+
 clean: 
-	rm otoperld
-	rm $(OBJS)
-	rm $(OBJS:.o=.d)
-	rm *.d.[0-9][0-9][0-9][0-9][0-9]
-	rm otoperld
+	-rm otoperld
+	-rm $(OBJS)
+	-rm $(OBJS:.o=.d)
+	-rm *.d.[0-9][0-9][0-9][0-9][0-9]
+	-rm perlxsi.c
 
 include $(OBJS:.o=.d)

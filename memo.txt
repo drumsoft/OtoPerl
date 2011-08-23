@@ -1,12 +1,47 @@
+#TODO
+IPアドレスで接続をフィルタする
+サンプルレート等を調整できる様にする
+perlでDSPコードを書きやすくするライブラリを書く
+自動テストの実装
+
+#マイルストーン
+基本的なDSP機能のひな形を作る
+	タイミング管理
+	オシレーター
+	LFO
+	エフェクター
+	波形プレイバッカー
+	トリガー
+	EG
+	シンセサイザー
+AudioUnit版を作る
+オーディオ・インに対応する
+MIDI IN OUTに対応する
+MML機能を追加する
+
+#otoperld options
+-p, --port	port number (default 14609)
+-v --verbose	
+-c --channel	number of channels (default 2)
+-r --rate	samplinc rate (default 48000)
+
+#otoperl options
+-h, --host localhost
+-p, --port 14609
+
+
 #パフォーマンス向上のための検討候補
 
 http://perldoc.jp/docs/perl/5.10.0/perlcall.pod#LIGHTWEIGHT32CALLBACKS
 軽量コールバック
 
-マルチスレッドで複数の音源を別々に生成する
-（ミックスをC側でやればさらに早そう）
-
 バッファリングの量を調整(CPU使用量が上がっても音が切れない様に)
+
+「ミキサー」の演算をCの側に持ってくる
+
+Perl側マルチスレッドで複数の音源を別々に実行
+
+C側でPerlをマルチインスタンス化して別スレッドで複数実行する
 
 #パフォーマンスに関するメモ
 
@@ -74,26 +109,7 @@ gcc-4.2
 	-o otoperld 
 	audiounit.o codeserver.o otoperld.o main.o
 
-#マイルストーン
-基本的なDSP機能のひな形を作る
-	タイミング管理
-	オシレーター
-	LFO
-	エフェクター
-	波形プレイバッカー
-	トリガー
-	EG
-	シンセサイザー
-AudioUnit版を作る
-オーディオ・インに対応する
-MIDI IN OUTに対応する
-MML機能を追加する
-
 #CにPerlを埋め込むバージョンでうまくいった。
-
-[TODO]
-perlでDSPコードを書きやすくするライブラリを書く
-自動テストの実装
 
 [DONE]
 とりあえず動く様にした
@@ -237,13 +253,6 @@ perlの処理(特に関数呼び出し処理)がスレッドセーフではな�
 	http://perldoc.jp/docs/perl/5.10.0/perlembed.pod
 
 	Audio UnitサーバとperlクライアントでUDP通信する
-
-#otoperld options
--port 14609
-
-#otoperl options
--host localhost
--port 14609
 
 #Serverでの発音開始と設定のタイミング
 otoperld起動時: otoperld -rate 96000..

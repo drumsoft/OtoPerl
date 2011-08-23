@@ -33,6 +33,8 @@
 void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels);
 char *perl_code_liveeval(char *code);
 
+EXTERN_C void xs_init (pTHX);
+
 // ------------------------------------------------ otoperld implimentation
 codeserver *cs;
 
@@ -52,7 +54,7 @@ void otoperld_start(int port, int perlargc, char **perlargv, char **env) {
 	PERL_SYS_INIT3(&perlargc, &perlargv, &env);
 	my_perl = perl_alloc();
 	perl_construct(my_perl);
-	perl_parse(my_perl, NULL, perlargc, perlargv, NULL);
+	perl_parse(my_perl, xs_init, perlargc, perlargv, NULL);
 	PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
 
 	dSP;
@@ -137,7 +139,15 @@ char *perl_code_liveeval(char *code) {
 	pthread_mutex_lock( &mutex_for_perl );
 	pthread_cond_wait( &cond_for_perl, &mutex_for_perl );
 
-	eval_pv(code, FALSE);
+	dSP;
+	ENTER;
+	SAVETMPS;
+	
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newSVpv(code, 0)));
+	PUTBACK;
+
+	call_pv("perl_eval", G_DISCARD|G_EVAL);
 
 	if (SvTRUE(ERRSV)){
 		STRLEN len;
@@ -146,6 +156,10 @@ char *perl_code_liveeval(char *code) {
 		strcpy(rettext, err);
 	}
 
+	FREETMPS;
+	LEAVE;
+
+	int_perl_runtime_error = false;
 	pthread_mutex_unlock( &mutex_for_perl );
 
 	return rettext;

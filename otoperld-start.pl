@@ -19,8 +19,14 @@
 
 use strict;
 use warnings;
+no warnings 'redefine';
 
-my $frame;
+our $frame;
+
+sub perl_eval {
+	eval(shift);
+	die $@ if $@;
+}
 
 sub perl_render_init {
 	$frame = 0;

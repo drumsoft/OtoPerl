@@ -1,0 +1,42 @@
+OtoPerl History
+
+
+
+2011-10-13
+	Youtube に紹介ビデオをアップ
+	http://www.youtube.com/watch?v=-ByATVMO658
+
+2011-08-23
+	use strict や package が無効になるバグを解決。
+
+2011-08-10
+	C + embedded Perl による otoperld をまとめて、githubにアップ。
+	Ustで音出ししつつ公開テスト兼ライブ。
+
+2011-08-09
+	C + embedded Perl での実装を検証する。OKそう。
+
+2011-08-05
+	Perl から C を呼ぶタイプのサーバを諦める。
+	- AudioUnit を駆動するサーバと、Perlを動かすサーバを別プロセスにする方式
+	- C に Perl を embed する方式
+	等を考える。
+
+2011-07-18
+	Perl の ithread の仕様でハマり、しばらく停止。
+
+2011-07-16
+	Yuta Nakayama より名前のアイデアを沢山もらう。
+	その中から OtoPerl と命名。
+
+2011-07-12
+	Inline::C を使い Perl から C を呼ぶタイプのサーバを作り始める。
+
+2011-07-11
+	細かいテストコードを書いて、OtoPerlのコンセプトが実装可能である事を検証。
+
+2006
+	drumsoftの掲示板「文字から音を作るスレ」
+	http://drumsoft.com/cgi-bin/t_bbs/t_bbs.cgi?1044&1-
+	から、 eval がある Lightweight Language でリアルタイムにサウンド生成できたら、音を出しっぱなしでコードを変更できて面白いんじゃないの？と思いつく。が、そのうちやろうと思いつつ放置。
+

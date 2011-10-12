@@ -4,6 +4,10 @@ OtoPerl - live sound programming environment with Perl.
 
 OtoPerl は perl でリアルタイムサウンド生成を行うプログラム環境です。
 
+== Introduction Video ==
+
+http://www.youtube.com/watch?v=-ByATVMO658
+
 
 == feature ==
  * Coding with Perl

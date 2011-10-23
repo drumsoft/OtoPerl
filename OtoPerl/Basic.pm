@@ -97,7 +97,8 @@ sub new {
 		x2 => 0,
 		y => 0,
 		y1 => 0,
-		y2 => 0
+		y2 => 0,
+		freq_unit => $PI2 / $sample_rate
 	};
 	return bless $self, $class;
 }
@@ -105,22 +106,19 @@ sub new {
 sub set {
 	my ($v, $freq, $q) = @_;
 
-	my $w0 = $PI2 * $freq / $sample_rate;
+	my $w0 = $freq * $v->{freq_unit};
 	my $alpha = sin($w0) / (2 * $q);
 	my $cs = cos($w0);
 
 	my $b1 =   1 - $cs;
 	my $b0 = $b1 / 2;
-	my $b2 = $b0;
-	my $a0 =   1 + $alpha;
-	my $a1 =  -2 * $cs;
-	my $a2 =   1 - $alpha;
 
-	$v->{k1} = $b0/$a0;
-	$v->{k2} = $b1/$a0;
-	$v->{k3} = $b2/$a0;
-	$v->{k4} = $a1/$a0;
-	$v->{k5} = $a2/$a0;
+	$v->{a0} = 1 + $alpha; #$a0;
+	$v->{k1} = $b0; #$b0;
+	$v->{k2} = $b1; #$b1;
+	$v->{k3} = $b0; #$b2;
+	$v->{k4} =-2 * $cs ; #$a1;
+	$v->{k5} = 1 - $alpha ; #$a2;
 }
 
 sub val {
@@ -128,8 +126,34 @@ sub val {
 	$v->{x2} = $v->{x1};	$v->{x1} = $v->{x};	$v->{x} = shift;
 	$v->{y2} = $v->{y1};	$v->{y1} = $v->{y};
 
-	$v->{y} = $v->{k1}*$v->{x} + $v->{k2}*$v->{x1} + $v->{k3}*$v->{x2}
-                               - $v->{k4}*$v->{y1} - $v->{k5}*$v->{y2};
+	$v->{y} = ($v->{k1}*$v->{x} + $v->{k2}*$v->{x1} + $v->{k3}*$v->{x2}
+                               - $v->{k4}*$v->{y1} - $v->{k5}*$v->{y2}) / $v->{a0};
+}
+
+package OtoPerl::Basic::Delay;
+
+sub new {
+	my ($class) = @_;
+	my $self = {
+		size => 0,
+		v => []
+	};
+	return bless $self, $class;
+}
+
+sub set {
+	my ($self, $time) = @_;
+	$self->{size} = int($sample_rate * $time);
+}
+
+sub output {
+	my ($self) = @_;
+	@{$self->{v}} >= $self->{size} ? shift @{$self->{v}} : 0;
+}
+
+sub input {
+	my ($self, $v) = @_;
+	push @{$self->{v}}, $v;
 }
 
 1;

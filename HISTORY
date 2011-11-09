@@ -1,6 +1,16 @@
 OtoPerl History
 
-
+2011-11-09
+	下記のオプションを実装した
+		-v, --verbose	
+		-c, --channel	number of channels (default 2)
+		-r, --rate	sample rate (default 48000)
+		-a, --allow	allowed client IP addresses (default 127.0.0.1)
+	perl_render の仕様変更, データを正順で返すようにした。
+	(↑非互換な修正:既存のOtoPerlスクリプトを変更する必要あり)
+	perl_render_init の仕様変更 channel, sample_rate を渡すようにした。
+	サンプルの修正: データを正順で返す, 可変な sample_rate への対応.
+	サンプルを samples フォルダにまとめ、ファイル名を変更
 
 2011-10-13
 	Youtube に紹介ビデオをアップ

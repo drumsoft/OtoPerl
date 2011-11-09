@@ -5,7 +5,7 @@ our $frame;
 
 my $freq = 0;
 my %note2number = qw(c 0 c+ 1 d- 1 d 2 d+ 3 e- 3 e 4 f 5 f+ 6 g- 6 g 7 g+ 8 a- 8 a 9 a+ 10 b- 10 b 11 r -1);
-my $base_width = 48000 * 60 * 4 / 130;
+my $base_width = $sample_rate * 60 * 4 / 130;
 sub score_read {
 	if ( $_ =~ /([cdefgabr][+-]?)(\d*(\.?))/i ) {
 		my $length = int($base_width / ($2 ? $2 : 16));
@@ -25,7 +25,7 @@ my $filter = OtoPerl::Basic::Filter->new();
 $filter->set( 500 , 4 );
 
 $frame = 0;
-my $width = 48000;
+my $width = $sample_rate;
 my $width8 = $base_width / 8;
 my $number = 0;
 my $nstart = $frame;
@@ -39,7 +39,7 @@ sub perl_render {
 	my $channels = shift;
 	my (@w, $i);
 	my $m = 4;
-	for ($i = $size-1; $i >= 0; $i--) {
+	for ($i = 0; $i < $size; $i++) {
 		# bass sound: process notes
 		my $ratio;
 		if ($frame >= $nend) {
@@ -63,7 +63,7 @@ sub perl_render {
 		if ($freq == 0) {
 			$v6 = 0;
 		}else{
-			$v6 = $frame * $freq / 48000;
+			$v6 = $frame * $freq / $sample_rate;
 			$v6 = (1 - $ratio) * (
 				($v6 - int($v6)) > 0.5 ? 1 : -1
 			);

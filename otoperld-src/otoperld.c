@@ -44,9 +44,10 @@ pthread_cond_t cond_for_perl;
 PerlInterpreter *my_perl;
 bool int_perl_runtime_error;
 
-void otoperld_start(int port, int perlargc, char **perlargv, char **env) {
+void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, char **env) {
 	printf("otoperld - OtoPerl sound server - start with %s.\n", perlargv[1]);
-	printf("***WARNING*** otoperld port is %d. You must not expose it to network. Blocking the port with firewall is strongly recommended.\n", port);
+	printf("otoperld port: %d, allowed clients: %s\n", options->port, options->allow_pattern);
+	printf("*WARNING* don't expose otoperl port to network.\n");
 
 	pthread_mutex_init( &mutex_for_perl , NULL );
 	pthread_cond_init( &cond_for_perl, NULL );
@@ -57,14 +58,21 @@ void otoperld_start(int port, int perlargc, char **perlargv, char **env) {
 	perl_parse(my_perl, xs_init, perlargc, perlargv, NULL);
 	PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
 
-	dSP;
+	dSP; // ---------------- perl call perl_render_init
+	ENTER;
+	SAVETMPS;
 	PUSHMARK(SP);
-	call_pv("perl_render_init", G_DISCARD|G_NOARGS);
+	XPUSHs(sv_2mortal(newSViv(options->channel)));
+	XPUSHs(sv_2mortal(newSViv(options->sample_rate)));
+	PUTBACK;
+	call_pv("perl_render_init", G_DISCARD);
+	FREETMPS;
+	LEAVE;
 
 	int_perl_runtime_error = false;
-	audiounit_start(perl_audio_callback);
+	audiounit_start(options->channel, options->sample_rate, perl_audio_callback);
 
-	cs = codeserver_init(port, perl_code_liveeval);
+	cs = codeserver_init(options->port, options->allow_pattern, options->verbose, perl_code_liveeval);
 	codeserver_start(cs);
 
 	if (SIG_ERR == signal(SIGINT, otoperld_stop)) {
@@ -118,11 +126,14 @@ void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) {
 		}
 	} else {
 		int_perl_runtime_error = false;
-		if (count != frames * channels) croak("Big trouble\n");
-		UInt32 channel, frame;
-		for (channel = 0; channel < channels; channel++)
-			for (frame = 0; frame < frames; frame++)
+		int channel, frame, i = 0;
+		for (channel = channels - 1; channel >= 0; channel--) {
+			for (frame = frames - 1; frame >= 0; frame--) {
 				((Float32 *)( outbuf[channel].mData ))[frame] = POPn;
+				if (++i >= count) break;
+			}
+			if (i >= count) break;
+		}
 	}
 	PUTBACK;
 	

@@ -31,14 +31,9 @@ OSStatus	MyRenderer_Perl(void 				*inRefCon,
 				UInt32 						inNumberFrames, 
 				AudioBufferList 			*ioData);
 
-void CreateDefaultAU();
+void CreateDefaultAU( int channel, int sample_rate );
 void CloseDefaultAU();
 // -------------------------------------------- audiounit implimentation
-
-// THESE values can be read from your data source
-// they're used to tell the DefaultOutputUnit what you're giving it
-const Float64			sSampleRate = 48000;
-const int				sNumChannels = 2;
 
 const UInt32 theFormatID = kAudioFormatLinearPCM;
 // these are set based on which format is chosen
@@ -67,7 +62,7 @@ OSStatus	MyRenderer_Perl(void 				*inRefCon,
 }
 
 
-void	CreateDefaultAU() {
+void	CreateDefaultAU( int channel, int sample_rate ) {
 	OSStatus err = noErr;
 
 	// Open the default output unit
@@ -98,14 +93,14 @@ void	CreateDefaultAU() {
 	if (err) { printf ("AudioUnitSetProperty-CB=%ld\n", (long int)err); return; }
     
 	AudioStreamBasicDescription streamFormat;
-	streamFormat.mSampleRate = sSampleRate;		//	the sample rate of the audio stream
-	streamFormat.mFormatID = theFormatID;			//	the specific encoding type of audio stream
-	streamFormat.mFormatFlags = theFormatFlags;		//	flags specific to each format
-	streamFormat.mBytesPerPacket = theBytesInAPacket;	
-	streamFormat.mFramesPerPacket = theFramesPerPacket;	
-	streamFormat.mBytesPerFrame = theBytesPerFrame;		
-	streamFormat.mChannelsPerFrame = sNumChannels;	
-	streamFormat.mBitsPerChannel = theBitsPerChannel;	
+	streamFormat.mSampleRate = sample_rate;      //	the sample rate of the audio stream
+	streamFormat.mFormatID = theFormatID;        //	the specific encoding type of audio stream
+	streamFormat.mFormatFlags = theFormatFlags;  //	flags specific to each format
+	streamFormat.mBytesPerPacket = theBytesInAPacket;
+	streamFormat.mFramesPerPacket = theFramesPerPacket;
+	streamFormat.mBytesPerFrame = theBytesPerFrame;
+	streamFormat.mChannelsPerFrame = channel;
+	streamFormat.mBitsPerChannel = theBitsPerChannel;
 	
 	err = AudioUnitSetProperty (gOutputUnit,
 								kAudioUnitProperty_StreamFormat,
@@ -139,10 +134,8 @@ void	CreateDefaultAU() {
 void CloseDefaultAU () {
 	OSStatus err = noErr;
 
-	// REALLY after you're finished playing STOP THE AUDIO OUTPUT UNIT!!!!!!	'
-	// but we never get here because we're running until the process is nuked...	'
 	verify_noerr (AudioOutputUnitStop (gOutputUnit));
-	
+
 	err = AudioUnitUninitialize (gOutputUnit);
 	if (err) { printf ("AudioUnitUninitialize=%ld\n", (long int)err); return; }
 
@@ -150,9 +143,9 @@ void CloseDefaultAU () {
 }
 
 // ---------------------------
-void audiounit_start( void (*callback)(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) ) {
+void audiounit_start( int channel, int sample_rate, void (*callback)(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) ) {
 	audiounit_callback = callback;
-	CreateDefaultAU();
+	CreateDefaultAU( channel, sample_rate );
 	printf("audiounit start.\n");
 }
 

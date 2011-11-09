@@ -6,7 +6,7 @@ my $osc1   = OtoPerl::Basic::OSC->new(
 	            , undef, $frame );
 
 my @scale = (0,4,7,11,14,17,21,24);
-my $length = 24000;
+my $length = int($sample_rate / 2);
 my $freq;
 
 my $filter = OtoPerl::Basic::Filter->new();
@@ -16,20 +16,20 @@ sub perl_render {
 	my $channels = shift;
 	my (@w, $i, $v);
 
-	for ($i = $size-1; $i >= 0; $i--) {
+	for ($i = 0; $i < $size; $i++) {
 		# Sine Wave
-#		$v = sin( 3.1415 * 2 * $frame * 440 / 48000 );
+#		$v = sin( 3.1415 * 2 * $frame * 440 / $sample_rate );
 
 		# Square Wave
-#		$v = $frame * 440 / 48000;
+#		$v = $frame * 440 / $sample_rate;
 #		$v = $v - int($v) > 0.5 ? 1 : -1;
 
 		# Amplitude Modulation (AM)
-		my $lfo = (sin( 3.1415 * 2 * $frame * 0.5 / 48000 ) + 1) / 2;
+		my $lfo = (sin( 3.1415 * 2 * $frame * 0.5 / $sample_rate ) + 1) / 2;
 #		$v *= $lfo;
 
 		# Pulse With Modulation (PWM)
-#		$v = $frame * 440 / 48000;
+#		$v = $frame * 440 / $sample_rate;
 #		$v = $v - int($v) > $lfo ? 1 : -1;
 
 		# Scale
@@ -37,7 +37,7 @@ sub perl_render {
 			my $note = $scale[ int($frame / $length) % @scale ];
 			$freq = int( 440 * (2**( ($note + 48 - 69) / 12 )) );
 		}
-		$v = $frame * $freq / 48000;
+		$v = $frame * $freq / $sample_rate;
 		$v = $v - int($v) > 0.5 ? 1 : -1;
 
 		# Envelope
@@ -51,13 +51,13 @@ sub perl_render {
 
 		# Frequency Modulation (FM)
 #		my $fm = $env * 0.95 * 
-#			sin( 3.1415 * 2 * $frame * 660 / 48000 ) + 1;
+#			sin( 3.1415 * 2 * $frame * 660 / $sample_rate ) + 1;
 #		$osc1->freq($freq * $fm);
 #		$v = $osc1->next;
 
 		# Cut Off Filter
 #		$v *= 0.5;
-#		my $cutoff = 300 + 200 * sin( 3.1415 * 2 * $frame * 0.5 / 48000 );
+#		my $cutoff = 300 + 200 * sin( 3.1415 * 2 * $frame * 0.5 / $sample_rate );
 #		$filter->set($cutoff, 10);
 #		$v = $filter->val($v);
 

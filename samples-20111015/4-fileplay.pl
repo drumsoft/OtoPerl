@@ -2,7 +2,7 @@ our $frame;
 our (@sndL, @sndR, $sndSize);
 
 my ($loop_th, $loop_start, $loop_length);
-my $loop_base = int(48000 * 60 / 130 / 16);
+my $loop_base = int($sample_rate * 60 / 130 / 16);
 my $loop_switch = $loop_base * 32;
 
 

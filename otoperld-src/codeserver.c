@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "codeserver.h"
 
@@ -33,6 +33,8 @@
 
 void *codeserver__run(void *codeserver_self);
 void *codeserver__error(codeserver *self, char *err);
+bool codeserver__decode_ipaddr(char *str, unsigned char *addr, unsigned char *mask);
+bool codeserver__check_client_ip( codeserver *self, struct sockaddr_in *client);
 
 // ------------------------------------------------- codeserver_text decraration
 struct codeserver_textnode_s {
@@ -55,11 +57,33 @@ void  codeserver_text_destroy(codeserver_text *self);
 
 // --------------------------------------------------- codeserver implimentation
 
-codeserver *codeserver_init(int port, char *(*callback)(char *code)) {
+codeserver *codeserver_init(int port, const char *c_allow, bool verbose, char *(*callback)(char *code)) {
 	codeserver *self = (codeserver *)malloc(sizeof(codeserver));
 	self->callback = callback;
 	self->port = port;
+	self->verbose = verbose;
 	self->running = false;
+	
+	char *allow = (char *)malloc(strlen(c_allow));
+	if (!allow) return codeserver__error(self, "malloc failed(codeserver_init).");
+	strcpy(allow, c_allow);
+	unsigned char addr_c4[4]={0,0,0,0}, mask_c4[4]={0,0,0,0};
+	char *mask = strchr(allow, '/');
+	if (mask) {
+		*mask = '\0';
+		mask++;
+		if (! codeserver__decode_ipaddr(allow, addr_c4, NULL) )
+			return codeserver__error(self, "invalid format: allowed address.");
+		if (! codeserver__decode_ipaddr(mask , mask_c4, NULL) )
+			return codeserver__error(self, "invalid format: allowed mask.");
+	}else{
+		if (! codeserver__decode_ipaddr(allow, addr_c4, mask_c4) )
+			return codeserver__error(self, "invalid format: allowed address.");
+	}
+	self->allow_mask.s_addr = (*(uint32_t *)mask_c4);
+	self->allow_addr.s_addr = (*(uint32_t *)addr_c4) & (self->allow_mask.s_addr);
+	free(allow);
+	
 	return self;
 }
 
@@ -88,6 +112,7 @@ void *codeserver__run(void *codeserver_self) {
 	bzero((char *)&saddr, sizeof(saddr));
 	saddr.sin_family        = PF_INET;
 	saddr.sin_addr.s_addr   = INADDR_ANY;
+	//if ( ! inet_aton("192.168.0.1", &(saddr.sin_addr) ) ) exit(1);
 	saddr.sin_port          = htons(self->port);
 	if (bind(listen_fd, (struct sockaddr *)&saddr, sockaddr_in_size) < 0) 
 		return codeserver__error(self, "bind failed.");
@@ -113,8 +138,18 @@ void *codeserver__run(void *codeserver_self) {
 			return codeserver__error(self, "accept failed.");
 		}
 
+		if ( ! codeserver__check_client_ip( self, &caddr ) ) {
+			printf("server accessed from forbidden address %s.\n", inet_ntoa(caddr.sin_addr));
+			write(conn_fd, "403 Forbidden\n", 14);
+			write(conn_fd, "Content-Type: text/plain\n\n", 26);
+			write(conn_fd, "access from forbidden address.", 30);
+			if ( close(conn_fd) < 0) 
+				return codeserver__error(self, "close failed.");
+			continue;
+		}
+
 		codeserver_text *cstext = codeserver_text_new();
-		struct timeval recv_timeout = {1, 0};
+		struct timeval recv_timeout = {0, 100000};
 		fd_set recv_fds;
 		FD_ZERO(&recv_fds);
 		FD_SET(conn_fd, &recv_fds);
@@ -133,12 +168,15 @@ void *codeserver__run(void *codeserver_self) {
 				return codeserver__error(self, "recv failed.");
 			} else {
 				codeserver_text_push(cstext, buf, rsize);
-				if (rsize < BUFFERSIZE) break;
+				//if (rsize < BUFFERSIZE) break;
 			}
 		};
 
 		if (cstext->size == 0) {
 			printf("no code received ?.\n");
+			write(conn_fd, "400 no code received\n", 21);
+			write(conn_fd, "Content-Type: text/plain\n\n", 26);
+			write(conn_fd, "no code received.", 17);
 			codeserver_text_destroy(cstext);
 		}else{
 			char *code = codeserver_text_join(cstext);
@@ -146,13 +184,17 @@ void *codeserver__run(void *codeserver_self) {
 			codeserver_text_destroy(cstext);
 	
 			char *ret;
+			bool ret_allocated;
 			char *codestart = strstr(code, "\r\n\r\n");
 			if (codestart != NULL) {
 				codestart += 4;
-				//printf("[CODE START]\n%s\n[CODE END]\n", codestart);
+				if ( self->verbose )
+					printf("[CODE START]\n%s\n[CODE END]\n", codestart);
 				ret = self->callback(codestart);
+				ret_allocated = true;
 			}else{
 				ret = "failed to find code.";
+				ret_allocated = false;
 			}
 	
 			if (ret == NULL) {
@@ -164,7 +206,7 @@ void *codeserver__run(void *codeserver_self) {
 				write(conn_fd, ret, strlen(ret));
 			}
 	
-			free(ret);
+			if (ret_allocated) free(ret);
 			free(code);
 		}
 
@@ -181,6 +223,31 @@ void *codeserver__error(codeserver *self, char *err) {
 	self->running = false;
 	perror(err);
 	return NULL;
+}
+
+// decode string address *str to binary address *addr.
+// if *mask is not null, auto generated netmask will be set.
+// example: '192.168' is decoded as '192.168.0.0/255.255.0.0'
+bool codeserver__decode_ipaddr(char *str, unsigned char *addr, unsigned char *mask){
+	char *err, *tp;
+	for ( tp = strtok(str,"."); tp != NULL; tp = strtok(NULL,".") ){
+		long number = strtol(tp, &err, 0);
+		if (*err != '\0') return false;
+		if (number < 0 || number > 255) return false;
+		*addr++ = number;
+		if (mask) {
+			*mask++ = 255;
+		}
+	}
+	return true;
+}
+
+bool codeserver__check_client_ip( codeserver *self, struct sockaddr_in *client) {
+	printf("client %s, ", inet_ntoa(client->sin_addr) );
+	printf("allow %s"   , inet_ntoa(self->allow_addr) );
+	printf("/%s\n"      , inet_ntoa(self->allow_mask) );
+	return (self->allow_addr.s_addr) == 
+	       (self->allow_mask.s_addr & client->sin_addr.s_addr);
 }
 
 

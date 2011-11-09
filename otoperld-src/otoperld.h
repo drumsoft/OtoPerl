@@ -18,7 +18,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-void otoperld_start(int port, int perlargc, char **perlargv, char **env);
+#include <stdbool.h>
+
+typedef struct {
+	int port;
+	char *allow_pattern;
+	int channel;
+	int sample_rate;
+	bool verbose;
+} otoperld_options;
+
+#define OTOPERLD_OPTIONS_DEFAULTS {\
+	14609,\
+	"127.0.0.1",\
+	2,\
+	48000,\
+	false\
+}
+
+void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, char **env);
 void otoperld_stop ( int sig );
 
 

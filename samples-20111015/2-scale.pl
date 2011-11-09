@@ -5,8 +5,10 @@ my $osc1   = OtoPerl::Basic::OSC->new(
 my $scale;
 $scale = [0,4,7,9];
 
+my $length = int($sample_rate / 2);
+
 my @b;
-my $delay = 18000;
+my $delay = int(3 * $sample_rate / 8);
 my $delay_fb = 0.6;
 
 my $PI2 = 3.14159265 * 2;
@@ -21,10 +23,10 @@ sub perl_render {
 	my $channels = shift;
 	my (@w, $i, $v, $f);
 
-	for ($i = $size-1; $i >= 0; $i--) {
+	for ($i = 0; $i < $size; $i++) {
 		# process note
-		if (0 == $frame % 24000) {
-			$f = OtoPerl::Basic::freq_bynote(OtoPerl::Basic::scalednote($scale, ($frame / 24000) % 16 + 16));
+		if (0 == $frame % $length) {
+			$f = OtoPerl::Basic::freq_bynote(OtoPerl::Basic::scalednote($scale, ($frame / $length) % 16 + 16));
 		}
 
 		# generate wave

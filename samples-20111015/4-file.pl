@@ -45,7 +45,7 @@ sub readfile {
 
 # read aiff file
 # sample.aiff is singned 16 bit, 48kHz. placed in otoperld directory.
-my $r = readfile('sample.aiff', \@sndL, \@sndR);
+my $r = readfile('samples-20111015/sample.aiff', \@sndL, \@sndR);
 die($r) if $r;
 $sndSize = @sndL;
 
@@ -68,7 +68,7 @@ sub perl_render {
 	my $channels = shift;
 	my (@w, $i);
 	my $m = 4;
-	for ($i = $size-1; $i >= 0; $i--) {
+	for ($i = 0; $i < $size; $i++) {
 		# return sound data.
 		my @v = tapeplay($frame);
 

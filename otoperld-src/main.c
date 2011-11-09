@@ -20,21 +20,60 @@
 
 #include <stdlib.h>
 #include <getopt.h>
+#include <string.h>
+#include <stdio.h>
 #include "otoperld.h"
 
-#define OTOPERLD_DEFAULT_PORT 14609
 #define OTOPERLD_DEFAULT_STARTCODE "otoperld-start.pl"
 
+const char options_short[] = "p:vc:r:a:";
+const struct option options_long[] = {
+	{ "port"   , required_argument, NULL, 'p' },
+	{ "verbose",       no_argument, NULL, 'v' },
+	{ "channel", required_argument, NULL, 'c' },
+	{ "rate"   , required_argument, NULL, 'r' },
+	{ "allow"  , required_argument, NULL, 'a' }
+};
+
+char errortext[256];
+
+// -------------------------------------------- private functions
+long options_integer(const char *arg, long min, long max, const char *text);
+void die(const char *text);
+
+
+// -------------------------------------------- main
 int main(int argc, char **argv, char **env) {
-	int port = OTOPERLD_DEFAULT_PORT;
+	otoperld_options options = OTOPERLD_OPTIONS_DEFAULTS;
+
 	int perlargc;
 	char **perlargv;
 
-	int result;
-	while( (result = getopt(argc, argv, "p:")) != -1 ){
+	int result, length;
+	while( (result = getopt_long(argc, argv, options_short, options_long, NULL)) != -1 ){
 		switch(result){
 			case 'p':
-				port = atoi(optarg);
+				options.port
+				 = options_integer(optarg, 0, 65535, "-p, --port");
+				break;
+			case 'v':
+				options.verbose = true;
+				break;
+			case 'c':
+				options.channel
+				 = options_integer(optarg, 1, 128, "-c, --channel");
+				break;
+			case 'r':
+				options.sample_rate
+				 = options_integer(optarg, 1, 192000, "-r, --rate");
+				break;
+			case 'a':
+				length = strlen(optarg);
+				if ( length <= 0 || 39 < length)
+					die("-a, --allow parameter is like '192.168.1.3' or '192.168.2.0/255.255.255.0'.");
+				options.allow_pattern = (char *)malloc(length+1);
+				if ( ! options.allow_pattern ) die( "malloc faild (options.allow)." );
+				strcpy(options.allow_pattern, optarg);
 				break;
 		}
 	}
@@ -54,8 +93,28 @@ int main(int argc, char **argv, char **env) {
 		perlargv[1] = OTOPERLD_DEFAULT_STARTCODE;
 	}
 
-	otoperld_start(port, perlargc, perlargv, env);
+	otoperld_start(&options, perlargc, perlargv, env);
 	return 0;
 }
 
+
+// ----------------------------------------------- functions
+long options_integer(const char *arg, long min, long max, const char *text) {
+	char *err;
+	long number = strtol(arg, &err, 0);
+	
+	if (*err != '\0') {
+		sprintf(errortext, "%s parameter must be a number.", text);
+		die(errortext);
+	}else if( number < min || max < number ) {
+		sprintf(errortext, "%s parameter must be in %ld - %ld.", text, min, max);
+		die(errortext);
+	}
+	return number;
+}
+
+void die(const char *text) {
+	if (text) perror(text);
+	exit(-1);
+}
 

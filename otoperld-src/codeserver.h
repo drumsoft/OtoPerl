@@ -21,15 +21,19 @@
 
 #include <stdbool.h>
 #include <pthread.h>
+#include <netinet/in.h>
 
 typedef struct {
 	int port;
+	struct in_addr allow_addr;
+	struct in_addr allow_mask;
 	bool running;
 	pthread_t thread;
 	char *(*callback)(char *code);
+	bool verbose;
 } codeserver;
 
-codeserver *codeserver_init(int port, char *(*callback)(char *code));
+codeserver *codeserver_init(int port, const char *allow, bool verbose, char *(*callback)(char *code));
 void codeserver_start(codeserver *self);
 void codeserver_stop(codeserver *self);
 

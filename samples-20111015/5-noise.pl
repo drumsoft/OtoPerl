@@ -2,7 +2,6 @@ use strict;
 use warnings;
 
 my $PI2 = 3.14159265 * 2;
-my $sample_rate = 48000;
 
 my $osc_sin_fact = $PI2 / $sample_rate;
 sub osc_sin { # ($frame, $freq)
@@ -36,7 +35,9 @@ my $nnl;
 
 my $osc1   = OtoPerl::Basic::OSC->new(
 	            OtoPerl::Basic::freq_bynote(63) );
-my $width = 8000;
+my $width_base = int($sample_rate * 2 / 3);
+my $width = 1 + $width_base;
+
 sub perl_render {
 	my $size = shift;
 	my $channels = shift;
@@ -44,7 +45,7 @@ sub perl_render {
 	my $m = 4;
 	my $f1 = freq_bynote(70);
 	my $f2 = freq_bynote(63);
-	for ($i = $size-1; $i >= 0; $i--) {
+	for ($i = 0; $i < $size; $i++) {
 		# downstair note > sine
 		if (0 == $frame % $width) {
 			$f6 = OtoPerl::Basic::freq_bynote(OtoPerl::Basic::scalednote([0,4,7,9], int(rand(15)+0)));
@@ -55,7 +56,7 @@ sub perl_render {
 			 500*OtoPerl::Basic::osc_sin( $frame, 0.07 )
 			 *OtoPerl::Basic::osc_sin( $frame, 400 )) );
 
-	$width = 32001 + int(32000*OtoPerl::Basic::osc_sin( $frame, 0.05 ));
+		$width = 1 + $width_base + int($width_base*OtoPerl::Basic::osc_sin( $frame, 0.05 ));
 
 		$v = 
 		OtoPerl::Basic::osc_sin( $frame, 0.007 ) * 

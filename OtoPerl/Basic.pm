@@ -1,7 +1,6 @@
 package OtoPerl::Basic;
 
 my $PI2 = 3.14159265 * 2;
-my $sample_rate = 48000;
 my $freq_tuning = 440;
 
 sub default_wave {

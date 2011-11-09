@@ -21,6 +21,6 @@
 
 #include <AudioUnit/AudioUnit.h>
 
-void audiounit_start( void (*callback)(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) );
+void audiounit_start( int channel, int sample_rate, void (*callback)(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) );
 void audiounit_stop();
 

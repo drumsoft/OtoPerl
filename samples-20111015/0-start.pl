@@ -18,7 +18,7 @@ my $freq = 0;
 my $scale = [qw(0 2 4 5 7 9 11)];
 my $scale2 = [qw(0 2 4 7 9)];
 
-my $width = 48000*6;
+my $width = $sample_rate * 6;
 my $number = 0;
 my $nstart = $frame;
 my $nend = $frame;
@@ -30,7 +30,7 @@ sub perl_render {
 	my $channels = shift;
 	my (@w, $i);
 	my $m = 4;
-	for ($i = $size-1; $i >= 0; $i--) {
+	for ($i = 0; $i < $size; $i++) {
 		my $ratio;
 		if ($frame >= $nend) {
 			$number++;
@@ -39,7 +39,7 @@ sub perl_render {
 				$freq = OtoPerl::Basic::freq_bynote(OtoPerl::Basic::scalednote($scale, $number)+36);
 				$width = int($width * 0.7);
 			}else{
-				$width = 4000;
+				$width = $sample_rate / 12;
 				$freq = OtoPerl::Basic::freq_bynote(OtoPerl::Basic::scalednote($scale2, $number%32)+24);
 			}
 			$nend = $frame + $width;

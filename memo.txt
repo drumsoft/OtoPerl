@@ -1,6 +1,4 @@
 #TODO
-IPアドレスで接続をフィルタする
-サンプルレート等を調整できる様にする
 perlでDSPコードを書きやすくするライブラリを書く
 自動テストの実装
 
@@ -21,13 +19,17 @@ MML機能を追加する
 
 #otoperld options
 -p, --port	port number (default 14609)
--v --verbose	
--c --channel	number of channels (default 2)
--r --rate	samplinc rate (default 48000)
+-v, --verbose	
+-c, --channel	number of channels (default 2)
+-r, --rate	sampling rate (default 48000)
+-a, --allow	allowed client IP addresses (default 127.0.0.1)
+		192.168.0.8 (1 host only allowed, = 192.168.0.8/255.255.255.255)
+		192.168.1.0/255.255.252.0 (22 bit netmask)
+		192.168 (16 bit netmask, = 192.168.0.0/255.255.0.0)
 
 #otoperl options
--h, --host localhost
--p, --port 14609
+-h, --host (default localhost)
+-p, --port (default 14609)
 
 
 #パフォーマンス向上のための検討候補

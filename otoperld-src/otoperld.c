@@ -28,6 +28,7 @@
 #include "otoperld.h"
 #include "codeserver.h";
 #include "audiounit.h";
+#include "aiffrecorder.h"
 
 // ------------------------------------------------------ private functions
 void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels);
@@ -37,6 +38,8 @@ EXTERN_C void xs_init (pTHX);
 
 // ------------------------------------------------ otoperld implimentation
 codeserver *cs;
+AiffRecorder *ar;
+float *recordBuffer;
 
 pthread_mutex_t mutex_for_perl;
 pthread_cond_t cond_for_perl;
@@ -48,6 +51,15 @@ void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, ch
 	printf("otoperld - OtoPerl sound server - start with %s.\n", perlargv[1]);
 	printf("otoperld port: %d, allowed clients: %s\n", options->port, options->allow_pattern);
 	printf("*WARNING* don't expose otoperl port to network.\n");
+
+	if (options->output) {
+		printf("recording: %s\n", options->output);
+		recordBuffer = (float *)malloc(options->channel);
+		ar = AiffRecorder_create(options->channel, 32, options->sample_rate);
+		AiffRecorder_open(ar, options->output);
+	}else{
+		ar = NULL;
+	}
 
 	pthread_mutex_init( &mutex_for_perl , NULL );
 	pthread_cond_init( &cond_for_perl, NULL );
@@ -91,6 +103,12 @@ void otoperld_stop ( int sig ) {
 
 	audiounit_stop();
 
+	if (ar) {
+		AiffRecorder_close(ar);
+		AiffRecorder_destroy(ar);
+		free(recordBuffer);
+	}
+
 	perl_destruct(my_perl);
 	perl_free(my_perl);
 	PERL_SYS_TERM();
@@ -133,6 +151,14 @@ void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) {
 				if (++i >= count) break;
 			}
 			if (i >= count) break;
+		}
+		if (ar) {
+			for (frame = 0; frame < frames; frame++) {
+				for (channel = 0; channel < channels; channel++) {
+					recordBuffer[channel] = ((Float32 *)( outbuf[channel].mData ))[frame];
+				}
+				AiffRecorder_write32bit(ar, (uint32_t *)recordBuffer, 1);
+			}
 		}
 	}
 	PUTBACK;

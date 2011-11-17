@@ -1,8 +1,8 @@
 # otoperld
 
-#CFLAGS = -g -Wall
+#CFLAGS = -g -Wall -W
+CFLAGS = -O3 -Wall -W
 # -arch x86_64 -arch i386 -arch ppc 
-CFLAGS = -O3 -Wall 
 
 # perl compile environment
 # PERL = /opt/local/bin/perl # for MacPorts perl
@@ -15,8 +15,7 @@ PERLLDFLAGS = $(shell $(PERL) -MExtUtils::Embed -e ldopts | sed -e "s/-arch  *[^
 FRAMEWORKS = -framework CoreServices -framework CoreAudio -framework AudioUnit
 
 # otoperld
-OBJS = perlxsi.o audiounit.o codeserver.o otoperld.o main.o
-
+OBJS = perlxsi.o audiounit.o codeserver.o aiffrecorder.o otoperld.o main.o
 
 all: otoperld
 

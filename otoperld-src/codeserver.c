@@ -138,8 +138,9 @@ void *codeserver__run(void *codeserver_self) {
 			return codeserver__error(self, "accept failed.");
 		}
 
+		printf("client %s: ", inet_ntoa(caddr.sin_addr) );
 		if ( ! codeserver__check_client_ip( self, &caddr ) ) {
-			printf("server accessed from forbidden address %s.\n", inet_ntoa(caddr.sin_addr));
+			printf("accessed denied.\n");
 			write(conn_fd, "403 Forbidden\n", 14);
 			write(conn_fd, "Content-Type: text/plain\n\n", 26);
 			write(conn_fd, "access from forbidden address.", 30);
@@ -243,9 +244,6 @@ bool codeserver__decode_ipaddr(char *str, unsigned char *addr, unsigned char *ma
 }
 
 bool codeserver__check_client_ip( codeserver *self, struct sockaddr_in *client) {
-	printf("client %s, ", inet_ntoa(client->sin_addr) );
-	printf("allow %s"   , inet_ntoa(self->allow_addr) );
-	printf("/%s\n"      , inet_ntoa(self->allow_mask) );
 	return (self->allow_addr.s_addr) == 
 	       (self->allow_mask.s_addr & client->sin_addr.s_addr);
 }

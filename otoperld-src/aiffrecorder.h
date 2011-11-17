@@ -1,5 +1,5 @@
 // OtoPerl - live sound programming environment with Perl.
-// OtoPerl::otoperld - sound processing server for OtoPerl.
+// OtoPerl::aiffrecorder.c - sound recorder for OtoPerl.
 /*
     OtoPerl - live sound programming environment with Perl.
     Copyright (C) 2011- Haruka Kataoka
@@ -19,26 +19,20 @@
 */
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdint.h>
 
 typedef struct {
-	int port;
-	char *allow_pattern;
-	int channel;
-	int sample_rate;
-	bool verbose;
-	char *output;
-} otoperld_options;
+	FILE *fh;
+	uint32_t frames;
+	int framesize;
+	int channels;
+	unsigned char *headers;
+} AiffRecorder;
 
-#define OTOPERLD_OPTIONS_DEFAULTS {\
-	14609,\
-	"127.0.0.1",\
-	2,\
-	48000,\
-	false,\
-	NULL\
-}
-
-void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, char **env);
-void otoperld_stop ( int sig );
-
+AiffRecorder *AiffRecorder_create(int channels, int bits, int sampleRate);
+void AiffRecorder_destroy(AiffRecorder *self);
+bool AiffRecorder_open(AiffRecorder *self, const char *path);
+bool AiffRecorder_write32bit(AiffRecorder *self, const uint32_t *data, int frames);
+bool AiffRecorder_close(AiffRecorder *self);
 

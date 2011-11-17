@@ -26,13 +26,14 @@
 
 #define OTOPERLD_DEFAULT_STARTCODE "otoperld-start.pl"
 
-const char options_short[] = "p:vc:r:a:";
+const char options_short[] = "p:vc:r:a:o:";
 const struct option options_long[] = {
 	{ "port"   , required_argument, NULL, 'p' },
 	{ "verbose",       no_argument, NULL, 'v' },
 	{ "channel", required_argument, NULL, 'c' },
 	{ "rate"   , required_argument, NULL, 'r' },
-	{ "allow"  , required_argument, NULL, 'a' }
+	{ "allow"  , required_argument, NULL, 'a' },
+	{ "output" , required_argument, NULL, 'o' }
 };
 
 char errortext[256];
@@ -74,6 +75,12 @@ int main(int argc, char **argv, char **env) {
 				options.allow_pattern = (char *)malloc(length+1);
 				if ( ! options.allow_pattern ) die( "malloc faild (options.allow)." );
 				strcpy(options.allow_pattern, optarg);
+				break;
+			case 'o':
+				length = strlen(optarg);
+				options.output = (char *)malloc(length+1);
+				if ( ! options.output ) die( "malloc faild (options.output)." );
+				strcpy(options.output, optarg);
 				break;
 		}
 	}

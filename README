@@ -9,7 +9,7 @@ OtoPerl は perl でリアルタイムサウンド生成を行うプログラム
 (English or japanese resources)
 Introduction Video     http://www.youtube.com/watch?v=-ByATVMO658
 Main webpage           http://drumsoft.com/otoperl/
-github Repository      https://github.com/drumsoft/OtoPerl
+Github Repository      https://github.com/drumsoft/OtoPerl
 OtoPerl Sound Samples  http://soundcloud.com/otoperl
 
 (Japanese resources)
@@ -20,9 +20,9 @@ OtoPerlセッション 資料                http://drumsoft.com/otoperl/2011101
 == feature ==
  * Coding with Perl
    * Low learning cost for experienced user. Even a beginner can find a lot of resources to learn.
-   * You can use many cpan modules. It's rare system that you can aggregate your website's access log or analyse lexically your twitter timeline while generating sound.
+   * You can use many CPAN modules. It's rare system that you can aggregate your website's access log or analyze lexically your twitter timeline while generating sound.
  * Dynamic
-   * While performance (generating sounds) with OtoPerl, you can change (or overwrite) sound generater Perl script ('OtoPerl script'). It allows "coding as playing" live performance.
+   * While performance (generating sounds) with OtoPerl, you can change (or overwrite) sound generator Perl script ('OtoPerl script'). It allows "coding as playing" live performance.
  * Modules
    * Extending and combining OtoPerl prototype modules, You can quickly create new OtoPerl script.
  * with familiar environment
@@ -100,14 +100,15 @@ otoperld [-v] [-c channels] [-r sample_rate] [-a allowed_addresses] [-p port_num
                          192.168.1.0/255.255.252.0 (22 bit netmask)
                          192.168 (16 bit netmask, = 192.168.0.0/255.255.0.0)
  -p, --port 99999    Port number to listen. default is 14609.
- filename            OtoPerl script ran when server launched. dafault is 'otoperld-start.pl'.
+ -o, --output x.aiff Record sounds to specified file.
+ filename            OtoPerl script ran when server launched. default is 'otoperld-start.pl'.
 
 otoperlc [-h host_address] [-p port_number] filename, ...
  -p 99999          Port number to post. default is 14609.
  -h 192.168.0.1    Host name to post. default is localhost.
 
 == 起動オプション ==
-otoperld [-v] [-c チャンネル数] [-r サンプルレート] [-a 接続許可アドレス] [-p ポート番号] [ファイル名]
+otoperld [-v] [-c チャンネル数] [-r サンプルレート] [-a 接続許可アドレス] [-p ポート番号] [-o 出力ファイル名] [ファイル名]
  -v, --verbose       verboseモードになる
  -c, --channel 2     OtoPerlが生成するチャンネル数。デフォルトは 2
  -r, --rate 48000    OtoPerlが生成するサウンドのサンプリングレート。デフォルトは 48000
@@ -116,6 +117,7 @@ otoperld [-v] [-c チャンネル数] [-r サンプルレート] [-a 接続許�
                          192.168.1.0/255.255.252.0 (22ビットのネットマスクを指定)
                          192.168 (16ビットのネットマスクを指定, = 192.168.0.0/255.255.0.0)
  -p, --port 99999    サーバの待ち受けるポート番号。デフォルトは 14609
+ -o, --output x.aiff 指定したファイルに録音を行う。
  filename            サーバ起動時に実行されるOtoPerlスクリプト。デフォルトは otoperld-start.pl
 
 otoperlc [-h host_address] [-p port_number] filename, ...
@@ -131,10 +133,10 @@ otoperlc [-h host_address] [-p port_number] filename, ...
    * Client.pm            Modules called by otoperlc.
 
  * samples
-   * tutorial.pl    OtoPerl script : for tutrial.
-   * sample.pl      OtoPerl script : a sample.
-   * silence.pl     OtoPerl script : for silence.
-   * performance.pl OtoPerl script : for performance testing.
+   * tutorial.pl          OtoPerl script : for tutorial.
+   * sample.pl            OtoPerl script : a sample.
+   * silence.pl           OtoPerl script : for silence.
+   * performance.pl       OtoPerl script : for performance testing.
 
  * README                 is you're reading.
  * HISTORY                version history.
@@ -143,11 +145,12 @@ otoperlc [-h host_address] [-p port_number] filename, ...
 
  * Makefile               
  * otoperld-src           source files for otoperld.
-   * audiounit.h , audiounit.c   AudioUnit launcher.
-   * codeserver.h, codeserver.c  Simple HTTP Server.
-   * otoperld.h  , otoperld.c    the Body of otoperld.
-   * main.c                      otoperld launch code.
-   * Makefile                    
+   * audiounit.[ch]       AudioUnit launcher.
+   * codeserver.[ch]      Simple HTTP Server.
+   * otoperld.[ch]        the Body of otoperld.
+   * aiffrecorder.[ch]    recorder function
+   * main.c               otoperld launch code.
+   * Makefile             
 
 == 含まれるファイルの詳細 ==
  * otoperld               OtoPerl のサウンド生成サーバ 実行プログラム
@@ -157,10 +160,10 @@ otoperlc [-h host_address] [-p port_number] filename, ...
    * Client.pm            otoperlc が使用するモジュール
 
  * samples
-   * tutorial.pl    OtoPerlスクリプト: チュートリアル用
-   * sample.pl      OtoPerlスクリプト: サンプル
-   * silence.pl     OtoPerlスクリプト: 無音状態
-   * performance.pl OtoPerlスクリプト: パフォーマンスのテストに使用しているもの
+   * tutorial.pl          OtoPerlスクリプト: チュートリアル用
+   * sample.pl            OtoPerlスクリプト: サンプル
+   * silence.pl           OtoPerlスクリプト: 無音状態
+   * performance.pl       OtoPerlスクリプト: パフォーマンスのテストに使用しているもの
 
  * README                 is you're reading.
  * HISTORY                version history.
@@ -169,9 +172,10 @@ otoperlc [-h host_address] [-p port_number] filename, ...
 
  * Makefile               
  * otoperld-src           otoperld のソースファイル
-   * audiounit.h , audiounit.c   AudioUnit を起動するモジュール
-   * codeserver.h, codeserver.c  簡単なHTTPサーバ
-   * otoperld.h  , otoperld.c    otoperld の本体
-   * main.c                      otoperld の起動コード
-   * Makefile                    
+   * audiounit.[ch]       AudioUnit を起動するモジュール
+   * codeserver.h[ch]     簡単なHTTPサーバ
+   * otoperld.[ch]        otoperld の本体
+   * aiffrecorder.[ch]    録音機能
+   * main.c               otoperld の起動コード
+   * Makefile             
 

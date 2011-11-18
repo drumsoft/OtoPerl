@@ -1,5 +1,9 @@
 OtoPerl History
 
+2011-11-17
+	録音をできる様になった！
+		-o, --output	recording mode.
+
 2011-11-09
 	下記のオプションを実装した
 		-v, --verbose	

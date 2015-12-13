@@ -19,8 +19,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <CoreServices/CoreServices.h>
-
 #include "audiounit.h"
 
 #define UNUSED(x) (void)(x)
@@ -73,18 +71,18 @@ void	CreateDefaultAU( int channel, int sample_rate ) {
 	OSStatus err = noErr;
 
 	// Open the default output unit
-	ComponentDescription desc;
+	AudioComponentDescription desc;
 	desc.componentType = kAudioUnitType_Output;
 	desc.componentSubType = kAudioUnitSubType_DefaultOutput;
 	desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 	desc.componentFlags = 0;
 	desc.componentFlagsMask = 0;
 	
-	Component comp = FindNextComponent(NULL, &desc);
-	if (comp == NULL) { printf ("FindNextComponent\n"); return; }
+	AudioComponent comp = AudioComponentFindNext(NULL, &desc);
+	if (comp == NULL) { printf ("AudioComponentFindNext\n"); return; }
 	
-	err = OpenAComponent(comp, &gOutputUnit);
-	if (comp == NULL) { printf ("OpenAComponent=%ld\n", (long int)err); return; }
+	err = AudioComponentInstanceNew(comp, &gOutputUnit);
+	if (comp == NULL) { printf ("AudioComponentInstanceNew=%ld\n", (long int)err); return; }
 
 	// Set up a callback function to generate output to the output unit
     AURenderCallbackStruct input;
@@ -141,12 +139,13 @@ void	CreateDefaultAU( int channel, int sample_rate ) {
 void CloseDefaultAU () {
 	OSStatus err = noErr;
 
-	verify_noerr (AudioOutputUnitStop (gOutputUnit));
+	err = AudioOutputUnitStop (gOutputUnit);
+	if (err) { printf ("AudioOutputUnitStop=%ld\n", (long int)err); }
 
 	err = AudioUnitUninitialize (gOutputUnit);
-	if (err) { printf ("AudioUnitUninitialize=%ld\n", (long int)err); return; }
+	if (err) { printf ("AudioUnitUninitialize=%ld\n", (long int)err); }
 
-	CloseComponent (gOutputUnit);
+	AudioComponentInstanceDispose (gOutputUnit);
 }
 
 // ---------------------------

@@ -26,8 +26,8 @@
 #include <CoreServices/CoreServices.h>
 
 #include "otoperld.h"
-#include "codeserver.h";
-#include "audiounit.h";
+#include "codeserver.h"
+#include "audiounit.h"
 #include "aiffrecorder.h"
 
 // ------------------------------------------------------ private functions
@@ -116,7 +116,7 @@ void otoperld_stop ( int sig ) {
 	pthread_mutex_destroy( &mutex_for_perl );
 	pthread_cond_destroy( &cond_for_perl );
 
-	printf("otoperld - OtoPerl sound server - stop.\n");
+	printf("otoperld - stopped (signal %d)\n", sig);
 
 	exit(0);
 }
@@ -144,13 +144,14 @@ void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) {
 		}
 	} else {
 		int_perl_runtime_error = false;
-		int channel, frame, i = 0;
-		for (channel = channels - 1; channel >= 0; channel--) {
-			for (frame = frames - 1; frame >= 0; frame--) {
+		UInt32 channel, frame;
+		int i = 0;
+		for (channel = channels - 1; ; channel--) {
+			for (frame = frames - 1; ; frame--) {
 				((Float32 *)( outbuf[channel].mData ))[frame] = POPn;
-				if (++i >= count) break;
+				if (++i >= count || frame == 0) break;
 			}
-			if (i >= count) break;
+			if (i >= count || channel == 0) break;
 		}
 		if (ar) {
 			for (frame = 0; frame < frames; frame++) {

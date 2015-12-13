@@ -35,6 +35,57 @@ MML機能を追加する
 -p, --port (default 14609)
 
 
+# AIFF recording memo
+QuickTime 7 で aiff 書き出しすると…
+	format: Linear PCM (選択肢なし)
+	channels: L R (選択肢なし→インターリーブのみ？)
+	rates: 任意
+	sample size: 8bit, 16bit, 24bit, 32bit, 32bit-float, 64bit-float
+	バイトオーダー: NetWork
+	インターリーブド
+
+AIFFのヘッダ
+'FORM' //Format
+	(4* SInt32 filesize[=total size - 8])
+	'AIFF'
+'COMM' //Common
+	00 00 00 12 //18
+	(2  SInt16 0x0002=2 numChannels)
+	(4* UInt32 0x002beec1 numSampleFrames フレーム個数)
+	(2  SInt16 0x0018=24 sampleSize)
+	(10 extended80 0x400ebb80 00 x 6 sampleRate)
+'SSND' //SoundData
+	(4* SInt32 size=n)
+	(4- UInt32 0x00 x 4 offset?)
+	(4- UInt32 0x00 x 4 blockSize?)
+	(n-8* Float32 SoundData)
+
+AIFCのヘッダ
+'FORM' //Format
+	(4* SInt32 filesize[=total size - 8])
+	'AIFC'
+'FVER' //FormatVersionID
+	00 00 00 04 //4
+	(4- UInt32 timestamp A2 80 51 40)
+'COMM' //Common
+	00 00 00 2C //44
+	(2  SInt16 0x0002=2 numChannels)
+	(4* UInt32 0x002beec1 numSampleFrames フレーム個数)
+	(2  SInt16 0x0018=24 sampleSize)
+	(10 extended80 0x400ebb80 00 x 6 sampleRate)
+	(4- Char[4] 'fl32' compressionType)
+	(22- Char+Char[21] 0x15 '32-bit Floating Point' compressionName)
+'CHAN' //これはなに？QuickTimeから書き出すとあるが、必須ではない。
+	00 00 00 20 //32
+	00 65 00 02 00 00 00 00 00 00 00 00 00 00 00 00 
+	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+'SSND' //SoundData
+	(4* SInt32 size=n)
+	(4- UInt32 0x00 x 4 offset?)
+	(4- UInt32 0x00 x 4 blockSize?)
+	(n-8* Float32 SoundData)
+
+
 #パフォーマンス向上のための検討候補
 
 http://perldoc.jp/docs/perl/5.10.0/perlcall.pod#LIGHTWEIGHT32CALLBACKS

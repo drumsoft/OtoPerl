@@ -1,7 +1,7 @@
 # otoperld
 
-#CFLAGS = -g -Wall -W
-CFLAGS = -O3 -Wall -W
+OPTFLAG = -O3
+CFLAGS = $(OPTFLAG) -Wall -W
 # -arch x86_64 -arch i386 -arch ppc 
 
 # perl compile environment
@@ -17,7 +17,11 @@ FRAMEWORKS = -framework CoreServices -framework CoreAudio -framework AudioUnit
 # otoperld
 OBJS = perlxsi.o audiounit.o codeserver.o aiffrecorder.o otoperld.o main.o
 
-all: otoperld
+all: 
+	make otoperld
+
+debug: 
+	make otoperld "OPTFLAG=-g"
 
 otoperld: $(OBJS)
 	$(CC) $(PERLLDFLAGS) $(FRAMEWORKS) -o $@ $^

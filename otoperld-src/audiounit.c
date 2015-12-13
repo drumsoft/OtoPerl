@@ -23,6 +23,8 @@
 
 #include "audiounit.h"
 
+#define UNUSED(x) (void)(x)
+
 // ----------------------------------------------------- private functions
 OSStatus	MyRenderer_Perl(void 				*inRefCon, 
 				AudioUnitRenderActionFlags 	*ioActionFlags, 
@@ -54,6 +56,11 @@ OSStatus	MyRenderer_Perl(void 				*inRefCon,
 				UInt32 						inBusNumber, 
 				UInt32 						inNumberFrames, 
 				AudioBufferList 			*ioData) {
+	
+	UNUSED(inRefCon);
+	UNUSED(ioActionFlags);
+	UNUSED(inTimeStamp);
+	UNUSED(inBusNumber);
 	
 	audiounit_callback(ioData->mBuffers
 		, inNumberFrames, ioData->mNumberBuffers);

@@ -197,6 +197,7 @@ AudioBufferList * allocAudioBufferList(UInt32 channels, UInt32 frames) {
 		bufferList->mBuffers[i].mNumberChannels = 1;
 		bufferList->mBuffers[i].mDataByteSize = bufferSizeBytes;
 		bufferList->mBuffers[i].mData = malloc(bufferSizeBytes);
+		memset(bufferList->mBuffers[i].mData, 0, bufferSizeBytes);
 	}
 	return bufferList;
 }

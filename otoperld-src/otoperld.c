@@ -122,6 +122,7 @@ void otoperld_stop ( int sig ) {
 }
 
 void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) {
+	UInt32 channel, frame;
 	pthread_mutex_lock( &mutex_for_perl );
 	
 	dSP;
@@ -131,6 +132,11 @@ void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) {
 	PUSHMARK(SP);
 	XPUSHs(sv_2mortal(newSViv(frames)));
 	XPUSHs(sv_2mortal(newSViv(channels)));
+	for (channel = 0; channel < channels; channel++) {
+		for (frame = 0; frame < frames; frame++) {
+			XPUSHs(sv_2mortal(newSVnv( ((Float32 *)( outbuf[channel].mData ))[frame] )));
+		}
+	}
 	PUTBACK;
 	
 	int count = call_pv("perl_render", G_ARRAY|G_EVAL);
@@ -144,7 +150,6 @@ void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) {
 		}
 	} else {
 		int_perl_runtime_error = false;
-		UInt32 channel, frame;
 		int i = 0;
 		for (channel = channels - 1; ; channel--) {
 			for (frame = frames - 1; ; frame--) {

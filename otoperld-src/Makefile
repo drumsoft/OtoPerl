@@ -15,7 +15,7 @@ PERLLDFLAGS = $(shell $(PERL) -MExtUtils::Embed -e ldopts | sed -e "s/-arch  *[^
 FRAMEWORKS = -framework CoreServices -framework CoreAudio -framework AudioUnit
 
 # otoperld
-OBJS = perlxsi.o audiounit.o codeserver.o aiffrecorder.o otoperld.o main.o
+OBJS = perlxsi.o coreaudioutilities.o audiounit.o codeserver.o aiffrecorder.o otoperld.o main.o
 
 all: 
 	make otoperld

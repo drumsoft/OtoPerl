@@ -15,7 +15,6 @@ perlでDSPコードを書きやすくするライブラリを書く
 	EG
 	シンセサイザー
 AudioUnit版を作る
-オーディオ・インに対応する
 MIDI IN OUTに対応する
 MML機能を追加する
 
@@ -33,6 +32,11 @@ MML機能を追加する
 #otoperl options
 -h, --host (default localhost)
 -p, --port (default 14609)
+
+#otoperld に送ると死ぬ Perl コード
+`コマンド` #たぶん
+print 1; #なんで?
+use IO::Socket; #他にも死ぬモジュールが沢山/全部死ぬわけではない
 
 
 # AIFF recording memo

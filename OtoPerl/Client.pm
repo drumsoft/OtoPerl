@@ -65,6 +65,7 @@ sub test_input_files {
 	my $arglist = shift;
 	@$arglist or die "no input files.";
 	foreach (@$arglist) {
+		next if $_ eq '-';
 		-r $_ or die "input file '$_' not exists or readable.";
 	}
 }

@@ -106,6 +106,8 @@ otoperld [-v] [-c channels] [-r sample_rate] [-a allowed_addresses] [-p port_num
 otoperlc [-h host_address] [-p port_number] filename, ...
  -p 99999          Port number to post. default is 14609.
  -h 192.168.0.1    Host name to post. default is localhost.
+ When - (hyphen) specified as filename, otoperlc reads texts from STDIN and sends them.
+
 
 == 起動オプション ==
 otoperld [-v] [-c チャンネル数] [-r サンプルレート] [-a 接続許可アドレス] [-p ポート番号] [-o 出力ファイル名] [ファイル名]
@@ -123,6 +125,7 @@ otoperld [-v] [-c チャンネル数] [-r サンプルレート] [-a 接続許�
 otoperlc [-h host_address] [-p port_number] filename, ...
  -p 99999          送信先ポート番号。デフォルトは 14609
  -h 192.168.0.1    送信先ホストアドレス。デフォルトは localhost
+ filename に - を指定すると標準入力の内容を読み込んで送信する。
 
 
 == file details ==

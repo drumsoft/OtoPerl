@@ -16,5 +16,9 @@ defined $options->{-h} and $options->{-host} = $options->{-h};
 
 OtoPerl::Client::test_input_files(\@ARGV);
 
-OtoPerl::Client->send($options, @ARGV);
-
+my @results = OtoPerl::Client->send($options, @ARGV);
+foreach (0..$#results) {
+	print "[$ARGV[$_]] ", 
+		defined $results[$_] ? $results[$_] : "ok",
+		"\n";
+}

@@ -12,9 +12,7 @@ sub send {
 	my $url = sprintf 'http://%s:%s/'
 		, $options->{-host}, $options->{-port};
 	
-	foreach(@_) {
-		_send($url, $_);
-	}
+	map { _send($url, $_) } @_;
 }
 
 # ---------------------------------------- private
@@ -33,15 +31,10 @@ sub _send {
 	my $response = $ua->post($url, Content => $code);
 
 	if ($response->is_success) {
-		_say("[$_]: " . $response->content);
+		return undef;
 	}else{
-		_say("[$_] ERROR (" . $response->status_line . "): " . $response->content);
+		return $response->status_line . "\n" . $response->content;
 	}
-}
-
-sub _say {
-	print shift;
-	print "\n";
 }
 
 # ---------------------------------------- utilities

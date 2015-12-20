@@ -141,8 +141,8 @@ void *codeserver__run(void *codeserver_self) {
 		printf("client %s: ", inet_ntoa(caddr.sin_addr) );
 		if ( ! codeserver__check_client_ip( self, &caddr ) ) {
 			printf("accessed denied.\n");
-			write(conn_fd, "403 Forbidden\n", 14);
-			write(conn_fd, "Content-Type: text/plain\n\n", 26);
+			write(conn_fd, "HTTP/1.1 403 Forbidden\r\n", 24);
+			write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
 			write(conn_fd, "access from forbidden address.", 30);
 			if ( close(conn_fd) < 0) 
 				return codeserver__error(self, "close failed.");
@@ -175,8 +175,8 @@ void *codeserver__run(void *codeserver_self) {
 
 		if (cstext->size == 0) {
 			printf("no code received ?.\n");
-			write(conn_fd, "400 no code received\n", 21);
-			write(conn_fd, "Content-Type: text/plain\n\n", 26);
+			write(conn_fd, "HTTP/1.1 400 no code received\r\n", 31);
+			write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
 			write(conn_fd, "no code received.", 17);
 			codeserver_text_destroy(cstext);
 		}else{
@@ -199,11 +199,11 @@ void *codeserver__run(void *codeserver_self) {
 			}
 	
 			if (ret == NULL) {
-				write(conn_fd, "200 OK\n", 7);
-				write(conn_fd, "Content-Type: text/plain\n\n", 26);
+				write(conn_fd, "HTTP/1.1 200 OK\r\n", 17);
+				write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
 			}else{
-				write(conn_fd, "400 eval failed\n", 16);
-				write(conn_fd, "Content-Type: text/plain\n\n", 26);
+				write(conn_fd, "HTTP/1.1 400 eval failed\r\n", 26);
+				write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
 				write(conn_fd, ret, strlen(ret));
 			}
 	

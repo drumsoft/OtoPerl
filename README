@@ -1,4 +1,4 @@
-= OtoPerl READE =
+= OtoPerl README =
 
 OtoPerl - live sound programming environment with Perl.
 
@@ -6,7 +6,7 @@ OtoPerl は perl でリアルタイムサウンド生成を行うプログラム
 
 
 == Resources ==
-(English or japanese resources)
+(English or Japanese resources)
 Introduction Video     http://www.youtube.com/watch?v=-ByATVMO658
 Main webpage           http://drumsoft.com/otoperl/
 Github Repository      https://github.com/drumsoft/OtoPerl

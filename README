@@ -102,6 +102,7 @@ otoperld [-v] [-c channels] [-r sample_rate] [-a allowed_addresses] [-p port_num
  -p, --port 99999    Port number to listen. default is 14609.
  -o, --output x.aiff Record sounds to specified file.
  filename            OtoPerl script ran when server launched. default is 'otoperld-start.pl'.
+ -i, --enable-input  Enables an audio input (from Default Input Device)
 
 otoperlc [-h host_address] [-p port_number] filename, ...
  -p 99999          Port number to post. default is 14609.
@@ -121,6 +122,7 @@ otoperld [-v] [-c チャンネル数] [-r サンプルレート] [-a 接続許�
  -p, --port 99999    サーバの待ち受けるポート番号。デフォルトは 14609
  -o, --output x.aiff 指定したファイルに録音を行う。
  filename            サーバ起動時に実行されるOtoPerlスクリプト。デフォルトは otoperld-start.pl
+ -i, --enable-input  オーディオ入力を有効化する (Default Input Device が使われる)
 
 otoperlc [-h host_address] [-p port_number] filename, ...
  -p 99999          送信先ポート番号。デフォルトは 14609

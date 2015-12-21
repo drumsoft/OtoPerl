@@ -26,20 +26,26 @@
 #define UNUSED(x) (void)(x)
 
 // ----------------------------------------------------- private functions
-OSStatus	MyRenderer_Perl(void 				*inRefCon, 
+OSStatus	audiocallback_input(void 		*inRefCon, 
 				AudioUnitRenderActionFlags 	*ioActionFlags, 
 				const AudioTimeStamp 		*inTimeStamp, 
 				UInt32 						inBusNumber, 
 				UInt32 						inNumberFrames, 
 				AudioBufferList 			*ioData);
-OSStatus	MyRenderer_Perl2(void 				*inRefCon, 
+OSStatus	audiocallback_output(void 		*inRefCon, 
+				AudioUnitRenderActionFlags 	*ioActionFlags, 
+				const AudioTimeStamp 		*inTimeStamp, 
+				UInt32 						inBusNumber, 
+				UInt32 						inNumberFrames, 
+				AudioBufferList 			*ioData);
+OSStatus	audiocallback_outputonly(void 	*inRefCon, 
 				AudioUnitRenderActionFlags 	*ioActionFlags, 
 				const AudioTimeStamp 		*inTimeStamp, 
 				UInt32 						inBusNumber, 
 				UInt32 						inNumberFrames, 
 				AudioBufferList 			*ioData);
 
-void CreateDefaultAU( int channel, int sample_rate );
+void CreateDefaultAU( bool enable_input, int channel, int sample_rate );
 void CloseDefaultAU();
 // -------------------------------------------- audiounit implimentation
 
@@ -57,7 +63,7 @@ AudioBufferList *inputBuffer;
 
 void (*audiounit_callback)(AudioBuffer *outbuf, UInt32 frames, UInt32 channels);
 
-OSStatus	MyRenderer_Perl(void 				*inRefCon, 
+OSStatus	audiocallback_input(void 				*inRefCon, 
 				AudioUnitRenderActionFlags 	*ioActionFlags, 
 				const AudioTimeStamp 		*inTimeStamp, 
 				UInt32 						inBusNumber, 
@@ -77,20 +83,17 @@ OSStatus	MyRenderer_Perl(void 				*inRefCon,
 		return err;
 	}
 	
-	audiounit_callback(inputBuffer->mBuffers
-		, inNumberFrames, inputBuffer->mNumberBuffers);
+	audiounit_callback(inputBuffer->mBuffers, inNumberFrames, inputBuffer->mNumberBuffers);
 	
 	return err;
 }
 
-OSStatus	MyRenderer_Perl2(void 				*inRefCon, 
+OSStatus	audiocallback_output(void 				*inRefCon, 
 				AudioUnitRenderActionFlags 	*ioActionFlags, 
 				const AudioTimeStamp 		*inTimeStamp, 
 				UInt32 						inBusNumber, 
 				UInt32 						inNumberFrames, 
 				AudioBufferList 			*ioData) {
-	OSStatus err = noErr;
-	
 	UNUSED(inRefCon);
 	UNUSED(ioActionFlags);
 	UNUSED(inTimeStamp);
@@ -104,11 +107,26 @@ OSStatus	MyRenderer_Perl2(void 				*inRefCon,
 		);
 	}
 	
-	return err;
+	return noErr;
 }
 
+OSStatus	audiocallback_outputonly(void 				*inRefCon, 
+				AudioUnitRenderActionFlags 	*ioActionFlags, 
+				const AudioTimeStamp 		*inTimeStamp, 
+				UInt32 						inBusNumber, 
+				UInt32 						inNumberFrames, 
+				AudioBufferList 			*ioData) {
+	UNUSED(inRefCon);
+	UNUSED(ioActionFlags);
+	UNUSED(inTimeStamp);
+	UNUSED(inBusNumber);
+	
+	audiounit_callback(ioData->mBuffers, inNumberFrames, ioData->mNumberBuffers);
+	
+	return noErr;
+}
 
-void	CreateDefaultAU( int channel, int sample_rate ) {
+void	CreateDefaultAU( bool enable_input, int channel, int sample_rate ) {
 	OSStatus err = noErr;
 
 	// Open the default output unit
@@ -126,38 +144,56 @@ void	CreateDefaultAU( int channel, int sample_rate ) {
 	if (comp == NULL) { printf ("AudioComponentInstanceNew=%ld\n", (long int)err); return; }
 
 	// enable input
-	UInt32 enableIO = 1;
-	err = AudioUnitSetProperty (gOutputUnit,
-								kAudioOutputUnitProperty_EnableIO,
-								kAudioUnitScope_Input,
-								1,
-								&enableIO,
-								sizeof(enableIO));
-	if (err) { printf ("AudioUnitSetProperty-EnableInput=%4.4s, %ld\n", (char*)&err, (long int)err); return; }
+	if (enable_input) {
+		UInt32 enableIO = 1;
+		err = AudioUnitSetProperty (gOutputUnit,
+									kAudioOutputUnitProperty_EnableIO,
+									kAudioUnitScope_Input,
+									1,
+									&enableIO,
+									sizeof(enableIO));
+		if (err) { printf ("AudioUnitSetProperty-EnableInput=%4.4s, %ld\n", (char*)&err, (long int)err); return; }
+	}
 
-	// set current input device
-	AudioObjectID inputDevice = getDefaultDeviceID(true);
-	AudioObjectID outputDevice = getDefaultDeviceID(false);
-	AudioObjectID inOutDevice = getInputOutputDevice(inputDevice, outputDevice, channel);
-	
+	// set current input/output device
+	AudioObjectID inputDevice, outputDevice;
+	outputDevice = getDefaultDeviceID(false);
+	if (enable_input) {
+		inputDevice = getDefaultDeviceID(true);
+		inputDevice = outputDevice = getInputOutputDevice(inputDevice, outputDevice, channel);
+		err = AudioUnitSetProperty (gOutputUnit,
+									kAudioOutputUnitProperty_CurrentDevice,
+									kAudioUnitScope_Global,
+									1,
+									&inputDevice,
+									sizeof(inputDevice));
+		if (err) { printf ("AudioUnitSetProperty-CurrentDevice-1=%ld\n", (long int)err); return; }
+	}
 	err = AudioUnitSetProperty (gOutputUnit,
 								kAudioOutputUnitProperty_CurrentDevice,
 								kAudioUnitScope_Global,
 								0,
-								&inOutDevice,
-								sizeof(inOutDevice));
+								&outputDevice,
+								sizeof(outputDevice));
 	if (err) { printf ("AudioUnitSetProperty-CurrentDevice-0=%ld\n", (long int)err); return; }
-	err = AudioUnitSetProperty (gOutputUnit,
-								kAudioOutputUnitProperty_CurrentDevice,
-								kAudioUnitScope_Global,
-								1,
-								&inOutDevice,
-								sizeof(inOutDevice));
-	if (err) { printf ("AudioUnitSetProperty-CurrentDevice-1=%ld\n", (long int)err); return; }
+
+	// Set up a callback function to obtain inputs
+	if (enable_input) {
+		AURenderCallbackStruct input;
+		input.inputProc = audiocallback_input;
+		input.inputProcRefCon = NULL;
+		err = AudioUnitSetProperty (gOutputUnit, 
+									kAudioOutputUnitProperty_SetInputCallback, 
+									kAudioUnitScope_Global,
+									1, 
+									&input, 
+									sizeof(input));
+		if (err) { printf ("AudioUnitSetProperty-CallbackIn=%ld\n", (long int)err); return; }
+	}
 
 	// Set up a callback function to generate output to the output unit
 	AURenderCallbackStruct output;
-	output.inputProc = MyRenderer_Perl2;
+	output.inputProc = enable_input ? audiocallback_output : audiocallback_outputonly;
 	output.inputProcRefCon = NULL;
 	err = AudioUnitSetProperty (gOutputUnit, 
 								kAudioUnitProperty_SetRenderCallback, 
@@ -166,18 +202,6 @@ void	CreateDefaultAU( int channel, int sample_rate ) {
 								&output, 
 								sizeof(output));
 	if (err) { printf ("AudioUnitSetProperty-CallbackOut=%ld\n", (long int)err); return; }
-
-	// Set up a callback function to obtain inputs
-	AURenderCallbackStruct input;
-	input.inputProc = MyRenderer_Perl;
-	input.inputProcRefCon = NULL;
-	err = AudioUnitSetProperty (gOutputUnit, 
-								kAudioOutputUnitProperty_SetInputCallback, 
-								kAudioUnitScope_Global,
-								1, 
-								&input, 
-								sizeof(input));
-	if (err) { printf ("AudioUnitSetProperty-CallbackIn=%ld\n", (long int)err); return; }
 
 	// Set stream format
 	AudioStreamBasicDescription streamFormat;
@@ -190,15 +214,16 @@ void	CreateDefaultAU( int channel, int sample_rate ) {
 	streamFormat.mChannelsPerFrame = channel;
 	streamFormat.mBitsPerChannel = theBitsPerChannel;
 	
-	setSamplingRateToDevice(inputDevice, sample_rate);
-	
-	err = AudioUnitSetProperty (gOutputUnit,
-								kAudioUnitProperty_StreamFormat,
-								kAudioUnitScope_Output,
-								1,
-								&streamFormat,
-								sizeof(AudioStreamBasicDescription));
-	if (err) { printf ("AudioUnitSetProperty-FromInputFormat=%4.4s, %ld\n", (char*)&err, (long int)err); return; }
+	if (enable_input) {
+		setSamplingRateToDevice(inputDevice, sample_rate);
+		err = AudioUnitSetProperty (gOutputUnit,
+									kAudioUnitProperty_StreamFormat,
+									kAudioUnitScope_Output,
+									1,
+									&streamFormat,
+									sizeof(AudioStreamBasicDescription));
+		if (err) { printf ("AudioUnitSetProperty-FromInputFormat=%4.4s, %ld\n", (char*)&err, (long int)err); return; }
+	}
 
 	err = AudioUnitSetProperty (gOutputUnit,
 								kAudioUnitProperty_StreamFormat,
@@ -209,15 +234,18 @@ void	CreateDefaultAU( int channel, int sample_rate ) {
 	if (err) { printf ("AudioUnitSetProperty-IntoOutputFormat=%4.4s, %ld\n", (char*)&err, (long int)err); return; }
 
 	// alloc bufferList
-	UInt32 bufferSizeFrames;
-	UInt32 size = sizeof(bufferSizeFrames);
-	err = AudioUnitGetProperty (gOutputUnit, 
-								kAudioDevicePropertyBufferFrameSize, kAudioUnitScope_Global,
-								1,
-								&bufferSizeFrames,
-								&size);
-	if (err) { printf ("AudioUnitGetProperty-BufferFrameSize=%4.4s, %ld\n", (char*)&err, (long int)err); return; }
-	inputBuffer = allocAudioBufferList(channel, bufferSizeFrames);
+	inputBuffer = NULL;
+	if (enable_input) {
+		UInt32 bufferSizeFrames;
+		UInt32 size = sizeof(bufferSizeFrames);
+		err = AudioUnitGetProperty (gOutputUnit, 
+									kAudioDevicePropertyBufferFrameSize, kAudioUnitScope_Global,
+									1,
+									&bufferSizeFrames,
+									&size);
+		if (err) { printf ("AudioUnitGetProperty-BufferFrameSize=%4.4s, %ld\n", (char*)&err, (long int)err); return; }
+		inputBuffer = allocAudioBufferList(channel, bufferSizeFrames);
+	}
 
 	// Initialize unit
 	err = AudioUnitInitialize(gOutputUnit);
@@ -240,13 +268,13 @@ void CloseDefaultAU () {
 
 	AudioComponentInstanceDispose (gOutputUnit);
 
-	deallocAudioBufferList(inputBuffer);
+	if (inputBuffer) deallocAudioBufferList(inputBuffer);
 }
 
 // ---------------------------
-void audiounit_start( int channel, int sample_rate, void (*callback)(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) ) {
+void audiounit_start( bool enable_input, int channel, int sample_rate, void (*callback)(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) ) {
 	audiounit_callback = callback;
-	CreateDefaultAU( channel, sample_rate );
+	CreateDefaultAU( enable_input, channel, sample_rate );
 	printf("audiounit start.\n");
 }
 

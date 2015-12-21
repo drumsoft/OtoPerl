@@ -27,6 +27,7 @@ typedef struct {
 	int sample_rate;
 	bool verbose;
 	char *output;
+	bool enable_input;
 } otoperld_options;
 
 #define OTOPERLD_OPTIONS_DEFAULTS {\
@@ -35,7 +36,8 @@ typedef struct {
 	2,\
 	48000,\
 	false,\
-	NULL\
+	NULL,\
+	false\
 }
 
 void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, char **env);

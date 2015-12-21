@@ -47,6 +47,8 @@ pthread_cond_t cond_for_perl;
 PerlInterpreter *my_perl;
 bool int_perl_runtime_error;
 
+bool input_enabled;
+
 void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, char **env) {
 	printf("otoperld - OtoPerl sound server - start with %s.\n", perlargv[1]);
 	printf("otoperld port: %d, allowed clients: %s\n", options->port, options->allow_pattern);
@@ -60,6 +62,8 @@ void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, ch
 	}else{
 		ar = NULL;
 	}
+
+	input_enabled = options->enable_input;
 
 	pthread_mutex_init( &mutex_for_perl , NULL );
 	pthread_cond_init( &cond_for_perl, NULL );
@@ -82,7 +86,7 @@ void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, ch
 	LEAVE;
 
 	int_perl_runtime_error = false;
-	audiounit_start(options->channel, options->sample_rate, perl_audio_callback);
+	audiounit_start(options->enable_input, options->channel, options->sample_rate, perl_audio_callback);
 
 	cs = codeserver_init(options->port, options->allow_pattern, options->verbose, perl_code_liveeval);
 	codeserver_start(cs);
@@ -132,9 +136,11 @@ void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) {
 	PUSHMARK(SP);
 	XPUSHs(sv_2mortal(newSViv(frames)));
 	XPUSHs(sv_2mortal(newSViv(channels)));
-	for (channel = 0; channel < channels; channel++) {
-		for (frame = 0; frame < frames; frame++) {
-			XPUSHs(sv_2mortal(newSVnv( ((Float32 *)( outbuf[channel].mData ))[frame] )));
+	if (input_enabled) {
+		for (channel = 0; channel < channels; channel++) {
+			for (frame = 0; frame < frames; frame++) {
+				XPUSHs(sv_2mortal(newSVnv( ((Float32 *)( outbuf[channel].mData ))[frame] )));
+			}
 		}
 	}
 	PUTBACK;

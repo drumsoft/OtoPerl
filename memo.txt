@@ -28,6 +28,7 @@ MML機能を追加する
 		192.168.1.0/255.255.252.0 (22 bit netmask)
 		192.168 (16 bit netmask, = 192.168.0.0/255.255.0.0)
 -o, --output	recording mode.
+-i, --enable-input	input.
 
 #otoperl options
 -h, --host (default localhost)

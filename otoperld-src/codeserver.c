@@ -32,7 +32,6 @@
 
 // -------------------------------------------------------- private function
 
-void *codeserver__run(void *codeserver_self);
 void *codeserver__error(codeserver *self, char *err);
 bool codeserver__decode_ipaddr(char *str, unsigned char *addr, unsigned char *mask);
 bool codeserver__check_client_ip( codeserver *self, struct sockaddr_in *client);
@@ -65,7 +64,6 @@ codeserver *codeserver_init(int port, bool findfreeport, const char *c_allow, bo
 	self->port = port;
 	self->findfreeport = findfreeport;
 	self->verbose = verbose;
-	self->running = false;
 	
 	char *allow = (char *)malloc(strlen(c_allow));
 	if (!allow) return codeserver__error(self, "malloc failed(codeserver_init).");
@@ -91,148 +89,145 @@ codeserver *codeserver_init(int port, bool findfreeport, const char *c_allow, bo
 }
 
 void codeserver_start(codeserver *self) {
-	self->running = true;
-	pthread_create( &(self->thread), NULL, codeserver__run, self );
-}
-
-void codeserver_stop(codeserver *self) {
-	self->running = false;
-	pthread_join(self->thread, NULL); 
-}
-
-void *codeserver__run(void *codeserver_self) {
-	codeserver *self = codeserver_self;
 	struct sockaddr_in saddr;
-	struct sockaddr_in caddr;
-	int listen_fd, conn_fd;
 	unsigned int sockaddr_in_size = sizeof(struct sockaddr_in);
-	int rsize;
-	char buf[BUFFERSIZE];
-
-	if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-		return codeserver__error(self, "socket failed.");
-
+	
+	if ((self->listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		codeserver__error(self, "socket failed."); return;
+	}
+	
 	bzero((char *)&saddr, sizeof(saddr));
 	saddr.sin_family        = PF_INET;
 	saddr.sin_addr.s_addr   = INADDR_ANY;
 	//if ( ! inet_aton("192.168.0.1", &(saddr.sin_addr) ) ) exit(1);
 	saddr.sin_port          = htons(self->port);
 	if (self->findfreeport) {
-		while ( bind(listen_fd, (struct sockaddr *)&saddr, sockaddr_in_size) < 0 ) {
+		while ( bind(self->listen_fd, (struct sockaddr *)&saddr, sockaddr_in_size) < 0 ) {
 			self->port++;
 			saddr.sin_port = htons(self->port);
 		}
 		codeserver__write_port_file(self, PORTFILENAME, self->port);
 	} else {
-		if (bind(listen_fd, (struct sockaddr *)&saddr, sockaddr_in_size) < 0) 
-			return codeserver__error(self, "bind failed.");
+		if (bind(self->listen_fd, (struct sockaddr *)&saddr, sockaddr_in_size) < 0) {
+			codeserver__error(self, "bind failed."); return;
+		}
 	}
 
-	if (listen(listen_fd, SOMAXCONN) < 0)
-		return codeserver__error(self, "listen failed.");
+	if (listen(self->listen_fd, SOMAXCONN) < 0) {
+		codeserver__error(self, "listen failed."); return;
+	}
 	printf("codeserver start listening port %d.\n" , self->port);
+}
 
-	while(1) {
-		struct timeval accept_timeout = {1, 0};
-		fd_set accept_fds;
-		FD_ZERO(&accept_fds);
-		FD_SET(listen_fd, &accept_fds);
-		int selected = select(listen_fd+1, &accept_fds, (fd_set *)NULL, (fd_set *)NULL, &accept_timeout);
-		if (selected < 0) {
-			return codeserver__error(self, "select accept failed.");
-		} else if (selected == 0) {
-			if (!self->running) break;
-			continue;
-		}
+void codeserver_stop(codeserver *self) {
+	close(self->listen_fd);
+	printf("codeserver stop.\n");
+}
 
-		if ((conn_fd = accept(listen_fd, (struct sockaddr *)&caddr, &sockaddr_in_size)) < 0) {
-			return codeserver__error(self, "accept failed.");
-		}
-
-		printf("client %s: ", inet_ntoa(caddr.sin_addr) );
-		if ( ! codeserver__check_client_ip( self, &caddr ) ) {
-			printf("accessed denied.\n");
-			write(conn_fd, "HTTP/1.1 403 Forbidden\r\n", 24);
-			write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
-			write(conn_fd, "access from forbidden address.", 30);
-			if ( close(conn_fd) < 0) 
-				return codeserver__error(self, "close failed.");
-			continue;
-		}
-
-		codeserver_text *cstext = codeserver_text_new();
-		struct timeval recv_timeout = {0, 100000};
-		fd_set recv_fds;
-		FD_ZERO(&recv_fds);
-		FD_SET(conn_fd, &recv_fds);
-		while (1) {
-			int selected = select(conn_fd+1, &recv_fds, (fd_set *)NULL, (fd_set *)NULL, &recv_timeout);
-			if (selected < 0) {
-				return codeserver__error(self, "select recv failed.");
-			} else if (selected == 0) {
-				break;
-			}
-
-			rsize = recv(conn_fd, buf, BUFFERSIZE, 0);
-			if (rsize == 0) {
-				break;
-			} else if (rsize == -1) {
-				return codeserver__error(self, "recv failed.");
-			} else {
-				codeserver_text_push(cstext, buf, rsize);
-				//if (rsize < BUFFERSIZE) break;
-			}
-		};
-
-		if (cstext->size == 0) {
-			printf("no code received ?.\n");
-			write(conn_fd, "HTTP/1.1 400 no code received\r\n", 31);
-			write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
-			write(conn_fd, "no code received.", 17);
-			codeserver_text_destroy(cstext);
-		}else{
-			char *code = codeserver_text_join(cstext);
-			printf("%d bytes code to eval.\n", cstext->size);
-			codeserver_text_destroy(cstext);
+bool codeserver_run(codeserver *self) {
+	struct sockaddr_in caddr;
+	int conn_fd;
+	unsigned int sockaddr_in_size = sizeof(struct sockaddr_in);
+	char buf[BUFFERSIZE];
 	
-			char *ret;
-			bool ret_allocated;
-			char *codestart = strstr(code, "\r\n\r\n");
-			if (codestart != NULL) {
-				codestart += 4;
-				if ( self->verbose )
-					printf("[CODE START]\n%s\n[CODE END]\n", codestart);
-				ret = self->callback(codestart);
-				ret_allocated = true;
-			}else{
-				ret = "failed to find code.";
-				ret_allocated = false;
-			}
-	
-			if (ret == NULL) {
-				write(conn_fd, "HTTP/1.1 200 OK\r\n", 17);
-				write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
-			}else{
-				write(conn_fd, "HTTP/1.1 400 eval failed\r\n", 26);
-				write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
-				write(conn_fd, ret, strlen(ret));
-			}
-	
-			if (ret_allocated) free(ret);
-			free(code);
-		}
-
-		if ( close(conn_fd) < 0) 
-			return codeserver__error(self, "close failed.");
+	struct timeval accept_timeout = {0, 0};
+	fd_set accept_fds;
+	FD_ZERO(&accept_fds);
+	FD_SET(self->listen_fd, &accept_fds);
+	int selected = select(self->listen_fd+1, &accept_fds, (fd_set *)NULL, (fd_set *)NULL, &accept_timeout);
+	if (selected < 0) {
+		codeserver__error(self, "select accept failed."); return false;
+	} else if (selected == 0) {
+		return true;
 	}
 
-	close(listen_fd);
-	printf("codeserver stop.\n");
-	return NULL;
+	if ((conn_fd = accept(self->listen_fd, (struct sockaddr *)&caddr, &sockaddr_in_size)) < 0) {
+		codeserver__error(self, "accept failed."); return false;
+	}
+
+	printf("client %s: ", inet_ntoa(caddr.sin_addr) );
+	if ( ! codeserver__check_client_ip( self, &caddr ) ) {
+		printf("accessed denied.\n");
+		write(conn_fd, "HTTP/1.1 403 Forbidden\r\n", 24);
+		write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
+		write(conn_fd, "access from forbidden address.", 30);
+		if ( close(conn_fd) < 0) {
+			codeserver__error(self, "close failed."); return false;
+		}
+		return true;
+	}
+
+	codeserver_text *cstext = codeserver_text_new();
+	struct timeval recv_timeout = {0, 100000};
+	fd_set recv_fds;
+	FD_ZERO(&recv_fds);
+	FD_SET(conn_fd, &recv_fds);
+	while (1) {
+		int selected = select(conn_fd+1, &recv_fds, (fd_set *)NULL, (fd_set *)NULL, &recv_timeout);
+		if (selected < 0) {
+			codeserver__error(self, "select recv failed."); return false;
+		} else if (selected == 0) {
+			break;
+		}
+
+		int rsize = recv(conn_fd, buf, BUFFERSIZE, 0);
+		if (rsize == 0) {
+			break;
+		} else if (rsize == -1) {
+			codeserver__error(self, "recv failed."); return false;
+		} else {
+			codeserver_text_push(cstext, buf, rsize);
+			//if (rsize < BUFFERSIZE) break;
+		}
+	};
+
+	if (cstext->size == 0) {
+		printf("no code received ?.\n");
+		write(conn_fd, "HTTP/1.1 400 no code received\r\n", 31);
+		write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
+		write(conn_fd, "no code received.", 17);
+		codeserver_text_destroy(cstext);
+	}else{
+		char *code = codeserver_text_join(cstext);
+		printf("%d bytes code to eval.\n", cstext->size);
+		codeserver_text_destroy(cstext);
+
+		char *ret;
+		bool ret_allocated;
+		char *codestart = strstr(code, "\r\n\r\n");
+		if (codestart != NULL) {
+			codestart += 4;
+			if ( self->verbose )
+				printf("[CODE START]\n%s\n[CODE END]\n", codestart);
+			ret = self->callback(codestart);
+			ret_allocated = true;
+		}else{
+			ret = "failed to find code.";
+			ret_allocated = false;
+		}
+
+		if (ret == NULL) {
+			write(conn_fd, "HTTP/1.1 200 OK\r\n", 17);
+			write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
+		}else{
+			write(conn_fd, "HTTP/1.1 400 eval failed\r\n", 26);
+			write(conn_fd, "Content-Type: text/plain;\r\n\r\n", 29);
+			write(conn_fd, ret, strlen(ret));
+		}
+
+		if (ret_allocated) free(ret);
+		free(code);
+	}
+
+	if ( close(conn_fd) < 0) {
+		codeserver__error(self, "close failed.");
+		return false;
+	}
+	return true;
 }
 
 void *codeserver__error(codeserver *self, char *err) {
-	self->running = false;
+	(void)self;
 	perror(err);
 	return NULL;
 }

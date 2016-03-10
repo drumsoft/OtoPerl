@@ -45,6 +45,4 @@ typedef struct {
 }
 
 void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, char **env);
-void otoperld_stop ( int sig );
-
 

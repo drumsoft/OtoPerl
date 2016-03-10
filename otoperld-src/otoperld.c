@@ -18,8 +18,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <pthread.h>
-
 #include <EXTERN.h>
 #include <perl.h>
 
@@ -36,10 +34,13 @@ char *perl_code_liveeval(char *code);
 
 EXTERN_C void xs_init (pTHX);
 
+void otoperld__stop();
+
 // ------------------------------------------------ otoperld implimentation
 codeserver *cs;
 AiffRecorder *ar;
 float *recordBuffer;
+bool running = false;
 
 pthread_mutex_t mutex_for_perl;
 pthread_cond_t cond_for_perl;
@@ -91,18 +92,18 @@ void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, ch
 	cs = codeserver_init(options->port, options->findfreeport, options->allow_pattern, options->verbose, perl_code_liveeval);
 	codeserver_start(cs);
 
-	if (SIG_ERR == signal(SIGINT, otoperld_stop)) {
+	running = true;
+
+	if (SIG_ERR == signal(SIGINT, otoperld__stop)) {
 		printf("failed to set signal handler.n");
-		otoperld_stop(0);
+		running = false;
 	}
 
-	while(1){
-		if (!cs->running) otoperld_stop(0);
-		CFRunLoopRunInMode(kCFRunLoopDefaultMode, 2, false);
+	while(running){
+		CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, false);
+		running = codeserver_run(cs);
 	}
-}
-
-void otoperld_stop ( int sig ) {
+	
 	codeserver_stop(cs);
 
 	audiounit_stop();
@@ -120,9 +121,11 @@ void otoperld_stop ( int sig ) {
 	pthread_mutex_destroy( &mutex_for_perl );
 	pthread_cond_destroy( &cond_for_perl );
 
-	printf("otoperld - stopped (signal %d)\n", sig);
+	printf("otoperld - stopped\n");
+}
 
-	exit(0);
+void otoperld__stop() {
+	running = false;
 }
 
 void perl_audio_callback(AudioBuffer *outbuf, UInt32 frames, UInt32 channels) {

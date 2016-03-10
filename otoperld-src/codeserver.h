@@ -20,7 +20,6 @@
 */
 
 #include <stdbool.h>
-#include <pthread.h>
 #include <netinet/in.h>
 
 typedef struct {
@@ -28,13 +27,13 @@ typedef struct {
 	bool findfreeport;
 	struct in_addr allow_addr;
 	struct in_addr allow_mask;
-	bool running;
-	pthread_t thread;
+	int listen_fd;
 	char *(*callback)(char *code);
 	bool verbose;
 } codeserver;
 
 codeserver *codeserver_init(int port, bool findfreeport, const char *allow, bool verbose, char *(*callback)(char *code));
 void codeserver_start(codeserver *self);
+bool codeserver_run(codeserver *self);
 void codeserver_stop(codeserver *self);
 

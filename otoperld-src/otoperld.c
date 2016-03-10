@@ -75,6 +75,8 @@ void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, ch
 	perl_parse(my_perl, xs_init, perlargc, perlargv, NULL);
 	PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
 
+	perl_run(my_perl);
+	
 	dSP; // ---------------- perl call perl_render_init
 	ENTER;
 	SAVETMPS;
@@ -101,7 +103,9 @@ void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, ch
 
 	while(running){
 		CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, false);
-		running = codeserver_run(cs);
+		if (!codeserver_run(cs)) {
+			running = false;
+		}
 	}
 	
 	codeserver_stop(cs);

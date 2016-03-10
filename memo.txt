@@ -20,6 +20,7 @@ MML機能を追加する
 
 #otoperld options
 -p, --port	port number (default 14609)
+-f, --findfreeport	find a free port
 -v, --verbose	
 -c, --channel	number of channels (default 2)
 -r, --rate	sampling rate (default 48000)
@@ -32,12 +33,17 @@ MML機能を追加する
 
 #otoperl options
 -h, --host (default localhost)
--p, --port (default 14609)
+-p, --port (default 14609) / set '.' if otoperld launched with '-f'.
 
-#otoperld に送ると死ぬ Perl コード
-`コマンド` #たぶん
-print 1; #なんで?
-use IO::Socket; #他にも死ぬモジュールが沢山/全部死ぬわけではない
+
+# Perlインタプリタにアクセスするスレッド(pthread)の制限
+Perlインタプリタを初期化したスレッドではないスレッドから下記のPerlコードを実行すると死ぬ
+`コマンド`
+print 1;
+use IO::Socket; #他にも死ぬモジュールが沢山/死なないモジュールもある
+
+codeserver をメインスレッドで動作させる様にして回避した
+audio callback は別スレッドで動作させざるを得ないため回避できない
 
 
 # AIFF recording memo

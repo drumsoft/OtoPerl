@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
+#include "otoperld.h"
 #include "codeserver.h"
 
 #define BUFFERSIZE 8192
@@ -35,6 +36,7 @@ void *codeserver__run(void *codeserver_self);
 void *codeserver__error(codeserver *self, char *err);
 bool codeserver__decode_ipaddr(char *str, unsigned char *addr, unsigned char *mask);
 bool codeserver__check_client_ip( codeserver *self, struct sockaddr_in *client);
+void codeserver__write_port_file( codeserver *self, char *path, int port );
 
 // ------------------------------------------------- codeserver_text decraration
 struct codeserver_textnode_s {
@@ -57,10 +59,11 @@ void  codeserver_text_destroy(codeserver_text *self);
 
 // --------------------------------------------------- codeserver implimentation
 
-codeserver *codeserver_init(int port, const char *c_allow, bool verbose, char *(*callback)(char *code)) {
+codeserver *codeserver_init(int port, bool findfreeport, const char *c_allow, bool verbose, char *(*callback)(char *code)) {
 	codeserver *self = (codeserver *)malloc(sizeof(codeserver));
 	self->callback = callback;
 	self->port = port;
+	self->findfreeport = findfreeport;
 	self->verbose = verbose;
 	self->running = false;
 	
@@ -114,8 +117,16 @@ void *codeserver__run(void *codeserver_self) {
 	saddr.sin_addr.s_addr   = INADDR_ANY;
 	//if ( ! inet_aton("192.168.0.1", &(saddr.sin_addr) ) ) exit(1);
 	saddr.sin_port          = htons(self->port);
-	if (bind(listen_fd, (struct sockaddr *)&saddr, sockaddr_in_size) < 0) 
-		return codeserver__error(self, "bind failed.");
+	if (self->findfreeport) {
+		while ( bind(listen_fd, (struct sockaddr *)&saddr, sockaddr_in_size) < 0 ) {
+			self->port++;
+			saddr.sin_port = htons(self->port);
+		}
+		codeserver__write_port_file(self, PORTFILENAME, self->port);
+	} else {
+		if (bind(listen_fd, (struct sockaddr *)&saddr, sockaddr_in_size) < 0) 
+			return codeserver__error(self, "bind failed.");
+	}
 
 	if (listen(listen_fd, SOMAXCONN) < 0)
 		return codeserver__error(self, "listen failed.");
@@ -248,6 +259,16 @@ bool codeserver__check_client_ip( codeserver *self, struct sockaddr_in *client) 
 	       (self->allow_mask.s_addr & client->sin_addr.s_addr);
 }
 
+void codeserver__write_port_file( codeserver *self, char *path, int port ) {
+	FILE *portfile = fopen(path, "w");
+	if (portfile == NULL) {
+		codeserver__error(self, "opening portfile failed."); return;
+	}
+	if (fprintf(portfile, "%d", port) < 0) {
+		codeserver__error(self, "writing portfile failed."); return;
+	}
+	fclose(portfile);
+}
 
 // -------------------------------------------- codeserver_text implimentation
 codeserver_text *codeserver_text_new() {

@@ -14,6 +14,8 @@ my $options = OtoPerl::Client::read_options({
 defined $options->{-p} and $options->{-port} = $options->{-p};
 defined $options->{-h} and $options->{-host} = $options->{-h};
 
+$options->{-port} = OtoPerl::Client::find_port($options->{-port});
+
 OtoPerl::Client::test_input_files(\@ARGV);
 
 my @results = OtoPerl::Client->send($options, @ARGV);

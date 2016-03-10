@@ -26,9 +26,10 @@
 
 #define OTOPERLD_DEFAULT_STARTCODE "otoperld-start.pl"
 
-const char options_short[] = "p:vc:r:a:o:i";
+const char options_short[] = "p:fvc:r:a:o:i";
 const struct option options_long[] = {
 	{ "port"   , required_argument, NULL, 'p' },
+	{ "findfreeport",  no_argument, NULL, 'f' },
 	{ "verbose",       no_argument, NULL, 'v' },
 	{ "channel", required_argument, NULL, 'c' },
 	{ "rate"   , required_argument, NULL, 'r' },
@@ -57,6 +58,9 @@ int main(int argc, char **argv, char **env) {
 			case 'p':
 				options.port
 				 = options_integer(optarg, 0, 65535, "-p, --port");
+				break;
+			case 'f':
+				options.findfreeport = true;
 				break;
 			case 'v':
 				options.verbose = true;

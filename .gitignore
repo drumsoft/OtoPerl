@@ -6,3 +6,4 @@ _Inline
 obsolete
 my-*
 perlxsi.c
+.otoperld_port

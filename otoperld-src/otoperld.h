@@ -20,8 +20,11 @@
 
 #include <stdbool.h>
 
+#define PORTFILENAME ".otoperld_port"
+
 typedef struct {
 	int port;
+	bool findfreeport;
 	char *allow_pattern;
 	int channel;
 	int sample_rate;
@@ -32,6 +35,7 @@ typedef struct {
 
 #define OTOPERLD_OPTIONS_DEFAULTS {\
 	14609,\
+	false,\
 	"127.0.0.1",\
 	2,\
 	48000,\

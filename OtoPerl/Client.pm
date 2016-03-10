@@ -5,6 +5,8 @@ use strict;
 
 use LWP::UserAgent;
 
+my $default_portfile = '.otoperld_port';
+
 # ---------------------------------------- public
 sub send {
 	my $class = shift;
@@ -61,6 +63,21 @@ sub test_input_files {
 		next if $_ eq '-';
 		-r $_ or die "input file '$_' not exists or readable.";
 	}
+}
+
+sub find_port {
+	my $port = shift;
+	if ($port =~ /^\d+$/) {
+		return $port;
+	}
+	if ($port eq '.') {
+		$port = $default_portfile;
+	}
+	-r $port or die "port file $port is not exists.";
+	open my $in, $port or die "opening port file $port failed: $!";
+	$port = <$in> * 1;
+	close $in;
+	return $port;
 }
 
 1;

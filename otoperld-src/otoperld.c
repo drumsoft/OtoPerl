@@ -88,7 +88,7 @@ void otoperld_start(otoperld_options *options, int perlargc, char **perlargv, ch
 	int_perl_runtime_error = false;
 	audiounit_start(options->enable_input, options->channel, options->sample_rate, perl_audio_callback);
 
-	cs = codeserver_init(options->port, options->allow_pattern, options->verbose, perl_code_liveeval);
+	cs = codeserver_init(options->port, options->findfreeport, options->allow_pattern, options->verbose, perl_code_liveeval);
 	codeserver_start(cs);
 
 	if (SIG_ERR == signal(SIGINT, otoperld_stop)) {

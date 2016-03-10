@@ -25,6 +25,7 @@
 
 typedef struct {
 	int port;
+	bool findfreeport;
 	struct in_addr allow_addr;
 	struct in_addr allow_mask;
 	bool running;
@@ -33,7 +34,7 @@ typedef struct {
 	bool verbose;
 } codeserver;
 
-codeserver *codeserver_init(int port, const char *allow, bool verbose, char *(*callback)(char *code));
+codeserver *codeserver_init(int port, bool findfreeport, const char *allow, bool verbose, char *(*callback)(char *code));
 void codeserver_start(codeserver *self);
 void codeserver_stop(codeserver *self);
 

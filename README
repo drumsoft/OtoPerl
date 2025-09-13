@@ -4,6 +4,8 @@ OtoPerl - live sound programming environment with Perl.
 
 OtoPerl は perl でリアルタイムサウンド生成を行うプログラム環境です。
 
+[2025-09-13] The JavaScript version is here! / Javascript バージョンが登場！
+Otojs/otojsd https://github.com/drumsoft/otojsd
 
 == Resources ==
 (English or Japanese resources)
